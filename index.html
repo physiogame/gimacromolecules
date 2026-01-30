@@ -1,0 +1,1040 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=0.2, maximum-scale=5.0">
+    <meta name="description" content="Advanced Medical Physiology Simulation: GutDigest">
+    <meta name="author" content="Alagbonsi A.I., Salman T.M., Dada M.O., Okedun E.S., Ajibola A.A., Adepoju A.A., Gbolagade K.A., Marcondes F.K.">
+    <title>GutDigest</title>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&family=Lato:wght@300;400;700;900&display=swap" rel="stylesheet">
+    
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+
+    <style>
+        /* 1. VISUAL THEME & VARIABLES */
+        :root {
+            --wood-darkest: #1a0f0a; --wood-dark: #3e2723; --wood-medium: #5d4037; --wood-light: #8d6e63;
+            --brass-primary: #d4af37; --brass-highlight: #ffe57f; --brass-shadow: #8c6b0d;
+            --paper-texture: #f5f5f5; --felt-green: #1b3c24; --shadow-hard: rgba(0, 0, 0, 0.9);
+            
+            /* EXACT TABLE COLORS */
+            --tbl-pink: #fccaff;
+            --tbl-yellow: #ffff00;
+            --tbl-blue: #ccffff;
+            --tbl-border: #000000;
+            
+            /* TILE COLORS */
+            --tile-blue: linear-gradient(135deg, #3949ab, #1a237e); 
+            --tile-green: linear-gradient(135deg, #2e7d32, #1b5e20);
+            --tile-purple: linear-gradient(135deg, #8e24aa, #4a148c); 
+            --tile-red: linear-gradient(135deg, #c62828, #b71c1c);
+            --tile-cyan: linear-gradient(135deg, #00838f, #006064);
+        }
+
+        * { box-sizing: border-box; touch-action: manipulation; }
+        html { font-size: 16px; height: 100%; overflow: hidden; }
+
+        body { 
+            font-family: 'Lato', sans-serif; 
+            background-color: #0f0502; 
+            background-image: radial-gradient(circle at 50% 50%, #2d1a12 0%, #1a0f0a 60%, #050201 100%); 
+            color: #000; 
+            margin: 0; padding: 0; 
+            height: 100vh; width: 100vw; 
+            display: flex; flex-direction: column; 
+            overflow: hidden; /* Prevent body scroll, handle in split panes */
+        }
+
+        /* 2. HEADER */
+        #admin-btn-visible { 
+            position: fixed; top: 0; left: 50%; transform: translateX(-50%); 
+            width: 60px; height: 15px; background: linear-gradient(135deg, #d4af37 0%, #ffe57f 50%, #8c6b0d 100%); 
+            border: 1px solid #fff; border-top: none; border-radius: 0 0 10px 10px; 
+            box-shadow: 0 0 15px var(--brass-highlight); cursor: pointer; z-index: 5000; opacity: 0.8;
+        }
+        #admin-btn-visible:hover { opacity: 1; height: 20px; }
+
+        header { 
+            width: 100%; padding: 10px 20px; 
+            background-color: var(--wood-dark); border-bottom: 4px solid var(--wood-darkest); 
+            box-shadow: 0 5px 20px var(--shadow-hard); z-index: 1000; 
+            display: flex; flex-direction: column; gap: 5px; flex-shrink: 0; color: #e0d0c0;
+        }
+        .header-top { display: flex; justify-content: space-between; align-items: center; width: 100%; }
+        h1 { font-family: 'Cinzel', serif; font-size: 1.4rem; margin: 0; color: var(--brass-primary); text-transform: uppercase; letter-spacing: 1px; }
+
+        .header-controls { display: flex; align-items: center; gap: 10px; }
+        .zoom-control { display: flex; align-items: center; color: var(--brass-primary); font-family: 'Lato', sans-serif; font-weight: bold; font-size: 0.8rem; gap: 5px; background: rgba(0,0,0,0.3); padding: 4px 8px; border-radius: 12px; border: 1px solid #5d4037; }
+        input[type=range] { width: 80px; cursor: pointer; accent-color: var(--brass-primary); margin: 0 5px; }
+        .zoom-btn { background: var(--brass-primary); border: none; color: #1a0f0a; width: 20px; height: 20px; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-weight: 900; cursor: pointer; font-size: 1rem; padding-bottom: 2px; }
+        
+        #logout-btn, #contact-btn { background: transparent; border: 1px solid #d4af37; color: #d4af37; font-family: 'Cinzel', serif; font-weight: bold; padding: 0.3rem 0.6rem; font-size: 0.7rem; cursor: pointer; border-radius: 4px; text-decoration: none; }
+        #logout-btn:hover, #contact-btn:hover { background: #d4af37; color: #1a0f0a; box-shadow: 0 0 10px rgba(212, 175, 55, 0.5); }
+
+        #submit-all-btn { background-color: #1b5e20; color: #81c784; font-family: 'Cinzel', serif; font-weight: 900; font-size: 0.9rem; padding: 0.5rem 1.5rem; border: 2px solid #0d3310; border-radius: 4px; cursor: not-allowed; opacity: 0.6; text-transform: uppercase; letter-spacing: 1px; box-shadow: 0 4px 0 rgba(0,0,0,0.5); }
+        #submit-all-btn.ready { background: linear-gradient(135deg, #d4af37 0%, #ffe57f 50%, #8c6b0d 100%); color: #1a0f0a; border-color: var(--brass-highlight); cursor: pointer; opacity: 1; box-shadow: 0 5px 0 #8c6b0d, 0 0 15px rgba(212, 175, 55, 0.4); animation: pulseGold 2.5s infinite; }
+        #submit-all-btn.ready:active { transform: translateY(5px); box-shadow: 0 0 0 #8c6b0d; }
+        @keyframes pulseGold { 0% { filter: brightness(1); } 50% { filter: brightness(1.2); } 100% { filter: brightness(1); } }
+
+        #live-stats-bar { width: 100%; background: rgba(0,0,0,0.5); color: var(--brass-primary); padding: 2px; text-align: center; font-family: 'Cinzel', serif; font-size: 0.75rem; border-top: 1px solid #5d4037; display: flex; justify-content: center; gap: 20px; }
+        #global-passes { color: #4caf50; font-weight: 900; } 
+        #global-fails { color: #f44336; font-weight: 900; }
+
+        .nav-scroller { width: 100%; overflow-x: auto; display: flex; gap: 2px; padding-bottom: 2px; scrollbar-width: none; }
+        .nav-tab { flex: 1; min-width: 6rem; background: #2d1a12; color: #8d6e63; padding: 0.5rem 0.2rem; border: 1px solid #3e2723; border-radius: 6px 6px 0 0; font-family: 'Cinzel', serif; font-size: 0.85rem; font-weight: 700; text-align: center; cursor: pointer; transition: all 0.2s; position: relative; text-shadow: 0 1px 1px rgba(0,0,0,0.5); }
+        .nav-tab.active { background: var(--brass-primary); color: #1a0f0a; border-color: var(--brass-highlight); box-shadow: 0 -2px 10px rgba(212, 175, 55, 0.3); z-index: 10; transform: translateY(-2px); font-size: 0.95rem; }
+        .nav-tab.filled::after { content: '✓'; position: absolute; top: 2px; right: 2px; font-size: 0.7rem; color: #2e7d32; font-weight: 900; }
+
+        /* 3. MAIN GAME LAYOUT (Split Pane) */
+        .game-layout {
+            display: flex;
+            width: 100%;
+            flex: 1; /* Occupy all remaining vertical space after header */
+            overflow: hidden; /* Prevent window scroll */
+        }
+
+        /* LEFT SIDE: SCROLLABLE BOARD */
+        .board-wrapper {
+            flex: 5; /* 83% width */
+            height: 100%;
+            overflow: auto; /* Independent Scrolling (Both Axes) */
+            position: relative;
+            background-color: #e0e0e0;
+            display: flex;
+            flex-direction: column;
+            padding: 10px;
+        }
+
+        /* SCALABLE CONTENT INSIDE BOARD */
+        #scalable-content {
+            width: 100%;
+            transform-origin: top left;
+            zoom: 1.0; 
+            padding-bottom: 50px;
+        }
+
+        .board-card {
+            background-color: #fff;
+            border: 4px solid var(--wood-darkest);
+            border-radius: 6px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            padding: 10px;
+            min-width: 1200px; /* Force horizontal scroll if smaller */
+            margin-bottom: 20px;
+        }
+
+        /* RIGHT SIDE: FIXED INVENTORY */
+        .inventory-wrapper {
+            flex: 1; /* Remaining width */
+            min-width: 250px;
+            max-width: 300px;
+            height: 100%; /* Full height of container */
+            background-color: var(--wood-dark);
+            border-left: 6px solid var(--wood-darkest);
+            display: flex;
+            flex-direction: column;
+            z-index: 50;
+            box-shadow: -5px 0 20px rgba(0,0,0,0.5);
+        }
+
+        .inventory-header { background: var(--wood-darkest); color: var(--brass-primary); padding: 10px; text-align: center; font-family: 'Cinzel', serif; font-weight: 700; font-size: 0.9rem; border-bottom: 2px solid var(--brass-primary); text-transform: uppercase; letter-spacing: 1px; }
+        
+        .inventory-pool { 
+            flex: 1; 
+            padding: 10px; 
+            background-color: var(--felt-green); 
+            overflow-y: auto; /* Independent vertical scroll */
+            display: grid; 
+            grid-template-columns: repeat(2, 1fr); /* 2 Compact Columns */
+            grid-auto-rows: min-content; 
+            gap: 8px; 
+            align-content: start;
+            padding-bottom: 60px; /* EXTRA PADDING TO PREVENT CUTOFF */
+        }
+
+        .mid-copyright { width: 100%; background: #2b1d16; color: #d4af37; padding: 5px; text-align: center; font-family: 'Lato', sans-serif; font-size: 0.7rem; border: 1px solid #5d4037; border-radius: 4px; margin-bottom: 10px; }
+        .stage-title-display { background: var(--wood-dark); color: var(--brass-primary); font-family: 'Cinzel', serif; font-weight: 900; font-size: 1.1rem; padding: 5px; text-align: center; border: 2px solid var(--brass-primary); border-radius: 4px; margin-bottom: 5px; text-transform: uppercase; }
+        
+        /* INSTRUCTION TEXT */
+        .stage-description { 
+            color: #3e2723; 
+            font-family: 'Lato', sans-serif; 
+            font-weight: 700; 
+            font-size: 0.9rem; 
+            font-style: italic; 
+            text-align: center; 
+            padding: 8px; 
+            background: rgba(212, 175, 55, 0.15); 
+            border: 1px solid rgba(212, 175, 55, 0.4);
+            border-radius: 4px; 
+            margin-bottom: 10px; 
+        }
+
+        .action-bar { display: flex; justify-content: flex-end; gap: 10px; margin-bottom: 5px; }
+        .action-btn { padding: 4px 10px; border-radius: 4px; font-family: 'Cinzel', serif; font-weight: 900; font-size: 0.75rem; cursor: pointer; color: #fff; border: 1px solid rgba(255,255,255,0.2); }
+        .btn-undo { background: #5d4037; } .btn-clear { background: #8e0000; }
+
+        /* === THE GAME TABLE === */
+        .game-table { 
+            width: 100%; 
+            border-collapse: collapse; 
+            font-family: 'Times New Roman', serif; 
+            background: #fff;
+        }
+        .game-table th, .game-table td { border: 2px solid var(--tbl-border); padding: 4px; text-align: left; vertical-align: top; font-size: 0.95rem; color: #000; }
+        
+        /* HEADER STYLES */
+        .game-table thead th { 
+            background-color: var(--tbl-yellow); 
+            font-weight: 900; 
+            font-size: 1.05rem; 
+            text-align: left; 
+            text-transform: uppercase; 
+            padding: 8px;
+            letter-spacing: 0.5px;
+        }
+
+        /* WIDER COLUMNS TO PREVENT CUT-OFF */
+        .col-enzyme { background-color: var(--tbl-pink); width: 12%; min-width: 130px; font-weight: 900; }
+        .col-source { background-color: var(--tbl-yellow); width: 10%; min-width: 110px; }
+        .col-class { background-color: var(--tbl-pink); width: 10%; min-width: 110px; }
+        .col-substrate { background-color: var(--tbl-blue); width: 14%; min-width: 150px; }
+        .col-site { background-color: var(--tbl-yellow); width: 10%; min-width: 130px; }
+        .col-product { background-color: var(--tbl-blue); width: 22%; min-width: 250px; } /* EXPANDED */
+        .col-absorb { background-color: var(--tbl-blue); width: 22%; min-width: 250px; } /* EXPANDED */
+
+        /* DROP ZONE */
+        .drop-zone {
+            width: 100%; min-height: 50px; height: 100%;
+            display: flex; justify-content: center; align-items: center;
+            background: rgba(255,255,255,0.4); 
+            border: 1px dashed rgba(0,0,0,0.2);
+            transition: all 0.2s;
+        }
+        .drop-zone.hover-target { background-color: rgba(255, 255, 255, 0.8); box-shadow: inset 0 0 0 3px #000; }
+        .drop-zone.filled { background: transparent; border: none; }
+
+        /* CHIPS */
+        .chip { 
+            width: 100%; min-height: 50px; /* Taller for easier tap */
+            border-radius: 4px; 
+            display: flex; justify-content: center; align-items: center; 
+            padding: 4px; text-align: center; font-size: 0.8rem; font-weight: 900; 
+            font-family: 'Lato', sans-serif; cursor: pointer; 
+            color: #fff; text-shadow: 0 1px 1px rgba(0,0,0,0.8); 
+            border: 1px solid rgba(255,255,255,0.3); box-shadow: 0 2px 0 rgba(0,0,0,0.3); 
+            user-select: none; 
+        }
+        .chip:active { transform: translateY(2px); box-shadow: 0 0 0 rgba(0,0,0,0.3); }
+        .chip.selected { border: 3px solid #fff !important; transform: scale(1.05); z-index: 100; animation: pulseSelect 1s infinite; }
+        @keyframes pulseSelect { 0% { box-shadow: 0 0 10px #fff; } 50% { box-shadow: 0 0 20px #fff; } 100% { box-shadow: 0 0 10px #fff; } }
+
+        .chip.c1 { background: var(--tile-blue); } .chip.c2 { background: var(--tile-green); } .chip.c3 { background: var(--tile-purple); } .chip.c4 { background: var(--tile-red); } .chip.c5 { background: var(--tile-cyan); }
+
+        /* MERGED CHIP STYLE */
+        .drop-zone .chip { 
+            width: 100% !important; height: auto !important; min-height: 0 !important;
+            border-radius: 0 !important; box-shadow: none !important; border: none !important; 
+            background: transparent !important; 
+            color: #000 !important; text-shadow: none !important;
+            font-family: 'Times New Roman', serif !important; 
+            font-size: 0.95rem !important;
+            margin: 0; padding: 0;
+            display: block; text-align: left;
+            pointer-events: none; 
+        }
+        
+        .drag-clone { position: fixed; pointer-events: none; z-index: 9999; width: 140px; height: 50px; background: #8d6e63; color: #fff; border-radius: 6px; border: 2px solid var(--brass-primary); display: flex; justify-content: center; align-items: center; text-align: center; font-weight: 900; font-size: 0.9rem; opacity: 0.9; transform: rotate(-3deg); box-shadow: 0 20px 40px rgba(0,0,0,0.5); }
+
+        /* AUTH & MODALS */
+        #auth-screen, #verify-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.97); z-index: 8000; display: flex; justify-content: center; align-items: center; flex-direction: column; color: #e0d0c0; }
+        .auth-box { background: var(--wood-dark); border: 6px solid var(--wood-darkest); padding: 30px; border-radius: 6px; text-align: center; width: 100%; max-width: 500px; box-shadow: 0 0 100px rgba(0,0,0,1); }
+        .auth-title { color: var(--brass-primary); font-family: 'Cinzel', serif; font-size: 2rem; border-bottom: 2px solid var(--brass-primary); padding-bottom: 10px; margin-bottom: 20px; }
+        .auth-input, .auth-select { width: 100%; padding: 12px; margin: 5px 0; background: #1a0f0a; border: 1px solid #5d4037; color: var(--brass-primary); font-family: 'Lato'; border-radius: 4px; outline: none; }
+        .auth-btn { width: 100%; padding: 15px; margin-top: 20px; background: var(--brass-primary); color: #1a0f0a; font-family: 'Cinzel'; font-weight: 900; border: none; cursor: pointer; font-size: 1.1rem; box-shadow: 0 5px 0 #8c6b0d; }
+        .auth-btn:active { transform: translateY(4px); box-shadow: none; }
+        .toggle-link { margin-top: 15px; text-decoration: underline; cursor: pointer; color: #d4af37; }
+
+        .report-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.98); z-index: 6000; justify-content: center; align-items: center; }
+        .report-card { background: #f5f5f5; color: #000; width: 95%; max-width: 900px; max-height: 90vh; border: 8px solid var(--wood-dark); display: flex; flex-direction: column; overflow-y: auto; }
+        .report-header { background: var(--wood-darkest); color: var(--brass-primary); padding: 20px; text-align: center; font-family: 'Cinzel'; font-size: 1.5rem; font-weight: 900; border-bottom: 5px solid var(--brass-primary); }
+        .report-content { padding: 20px; }
+        .report-table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+        .report-table th { background: #ddd; padding: 10px; text-align: left; font-family: 'Cinzel'; border-bottom: 2px solid #000; }
+        .report-table td { padding: 10px; border-bottom: 1px solid #ccc; }
+        .status-pass { color: #2e7d32; font-weight: 900; } .status-fail { color: #c62828; font-weight: 900; }
+        .user-details-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px; border-bottom: 2px solid #ccc; padding-bottom: 10px; }
+        .watermark-text { margin-top: 20px; text-align: center; color: #333; font-size: 0.8rem; font-weight: 900; font-family: 'Cinzel', serif; padding: 10px; border-top: 2px solid #ccc; line-height: 1.4; }
+
+        /* RESPONSIVE BREAKPOINT FOR MOBILE */
+        @media (max-width: 800px) {
+            .game-layout { flex-direction: column; }
+            .inventory-wrapper { width: 100%; height: 35vh; border-left: none; border-top: 4px solid var(--brass-primary); max-width: none; }
+            .board-wrapper { height: 65vh; flex: none; }
+            .zoom-control { display: none; }
+        }
+
+        @media print {
+            body * { visibility: hidden; }
+            #report-modal { visibility: visible; position: absolute; left: 0; top: 0; width: 100%; height: 100%; z-index: 9999; }
+            #report-modal * { visibility: visible; }
+            /* FORCE HIDE RIBBONS IN PRINT */
+            #confetti, canvas { display: none !important; visibility: hidden !important; opacity: 0 !important; }
+            
+            .report-card { border: 2px solid #000; box-shadow: none; width: 100%; max-width: 100%; height: auto; display: block; }
+            .auth-btn, .action-btn { display: none !important; }
+            .watermark-text { color: #000 !important; }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="admin-btn-visible" onclick="exportToExcel()"></div>
+
+    <div id="contact-modal" class="report-modal">
+        <div class="auth-box" style="position:relative;">
+            <h2 style="color:var(--brass-primary); font-family:'Cinzel', serif;">Contact Us</h2>
+            <p style="color:#e0d0c0; margin:20px 0; font-size:1.1rem;">For inquiries, please email:</p>
+            <div style="background:rgba(0,0,0,0.3); padding:15px; border:1px solid #5d4037; color:#fff; font-weight:bold; font-size:1.2rem; user-select:text;">a.i.alagbonsi@ur.ac.rw</div>
+            <button class="auth-btn" onclick="closeContact()">CLOSE</button>
+        </div>
+    </div>
+
+    <div id="auth-screen">
+        <div class="auth-box">
+            <h2 class="auth-title" id="form-title">GutDigest<br>Login</h2>
+            <p style="color:#d4af37; font-size:0.9rem; margin-bottom:15px; font-weight:bold;">(Gmail is recommended for fastest verification)</p>
+            
+            <div id="login-form" class="form-section">
+                <input type="email" id="login-email" class="auth-input" placeholder="Email Address">
+                <input type="password" id="login-password" class="auth-input" placeholder="Password">
+                <button class="auth-btn" onclick="handleAuth()">LOGIN</button>
+                <div style="margin-top:15px; text-align:right; width:100%;">
+                    <span style="color:#8d6e63; cursor:pointer; font-size:0.9rem; text-decoration:underline;" onclick="toggleForgotMode()">Forgot Password?</span>
+                </div>
+            </div>
+
+            <div id="signup-form" class="form-section" style="display:none;">
+                <input type="email" id="signup-email" class="auth-input" placeholder="Email Address">
+                <input type="password" id="signup-password" class="auth-input" placeholder="Password">
+                <hr style="width:100%; border:0; border-top:1px solid #5d4037; margin:10px 0;">
+                <input type="text" id="fullName" class="auth-input" placeholder="Full Name">
+                <input type="text" id="institution" class="auth-input" placeholder="Institution">
+                <input type="text" id="course" class="auth-input" placeholder="Course/Department">
+                <div style="display:flex; gap:10px;">
+                    <select id="level" class="auth-select" style="cursor:pointer; flex:1;">
+                        <option value="" disabled selected>Select Level</option>
+                        <option value="Undergraduate">Undergraduate</option>
+                        <option value="Postgraduate">Postgraduate</option>
+                        <option value="Faculty">Faculty</option>
+                    </select>
+                    <select id="role" class="auth-select" style="cursor:pointer; flex:1;">
+                        <option value="" disabled selected>Select Role</option>
+                        <option value="Student">Student</option>
+                        <option value="Tutor">Tutor</option>
+                    </select>
+                </div>
+                <input type="text" id="country" class="auth-input" placeholder="Country">
+                <button class="auth-btn" onclick="handleAuth()">SIGN UP</button>
+            </div>
+
+            <div id="forgot-form" class="form-section" style="display:none;">
+                <p style="color:#e0d0c0; font-size:1rem; margin-bottom:15px;">Enter your email address.</p>
+                <input type="email" id="forgot-email" class="auth-input" placeholder="Enter your registered email">
+                <button class="auth-btn" onclick="resetPassword()">SEND RESET LINK</button>
+                <div style="margin-top:20px; text-align:center; width:100%;">
+                    <span style="color:#d4af37; cursor:pointer; font-weight:bold; text-decoration:underline;" onclick="toggleForgotMode()">Back to Login</span>
+                </div>
+            </div>
+
+            <div id="main-toggle-link" class="toggle-link" onclick="toggleAuthMode()">
+                <span id="auth-toggle-text">New User? Sign Up Here</span>
+            </div>
+            <p id="auth-error" style="color:#ef5350; font-size:1rem; margin-top:15px; font-weight:bold; padding: 10px;"></p>
+        </div>
+    </div>
+
+    <div id="verify-screen" style="display:none;">
+        <div class="auth-box">
+            <h2 style="color:var(--brass-primary); font-family:'Cinzel', serif;">Check Your Inbox</h2>
+            <p style="color:#e0d0c0; margin:15px 0; font-size:1.1rem; line-height:1.5;">We sent a verification link to:<br><strong id="verify-email-display" style="color:#fff; font-size:1.3rem;"></strong></p>
+            <p style="color:#8d6e63; font-size:0.9rem;">(Yahoo/Outlook can take up to 5 mins)</p>
+            <button class="auth-btn" onclick="location.reload()">I HAVE CLICKED THE LINK</button>
+            <button id="resend-btn" class="auth-btn" style="background:transparent; border:1px solid #5d4037; color:#8d6e63; margin-top:10px; font-size:1rem;" onclick="resendVerification()">Resend Email</button>
+            <div class="toggle-link" onclick="location.reload()">Back to Login</div>
+        </div>
+    </div>
+
+    <header>
+        <div class="header-top">
+            <h1>GutDigest</h1>
+            <div class="header-controls">
+                <div id="live-stats-bar">
+                    <span>RESEARCHERS: <strong id="global-players">0</strong></span>
+                    <span>PASSES: <strong id="global-passes">0</strong></span>
+                    <span>FAILS: <strong id="global-fails">0</strong></span>
+                </div>
+                <div style="color:#e0d0c0; font-family:'Lato'; font-weight:bold; display:flex; flex-direction:column; justify-content:center; text-align:right;">
+                    <span id="display-username" style="color:#d4af37; font-family:'Cinzel'; font-size:1rem; max-width:400px; line-height:1.2;">Guest</span>
+                </div>
+                <button id="contact-btn" onclick="handleContact()">CONTACT US</button>
+                <button id="logout-btn" onclick="handleLogout()">LOGOUT</button>
+                <div class="zoom-control">
+                    ZOOM: <button class="zoom-btn" onclick="adjustZoom(-0.1)">-</button>
+                    <input type="range" id="zoomRange" min="0.5" max="1.5" step="0.1" value="1.0" oninput="updateZoom(this.value)">
+                    <button class="zoom-btn" onclick="adjustZoom(0.1)">+</button>
+                </div>
+                <button id="submit-all-btn" onclick="submitSimulation()">SUBMIT GAME</button>
+            </div>
+        </div>
+        <div class="nav-scroller" id="nav-tabs"></div>
+    </header>
+
+    <div class="game-layout">
+        
+        <div class="board-wrapper">
+            <div id="scalable-content">
+                <div class="stage-title-display" id="stage-title">Loading...</div>
+                <div class="stage-description" id="stage-desc"></div>
+                
+                <div class="mid-copyright">
+                    &copy; 2025 Alagbonsi A.I., Salman T.M., Dada M.O., Okedun E.S., Ajibola A.A., Adepoju A.A., Gbolagade K.A., Marcondes F.K.
+                </div>
+
+                <div class="action-bar">
+                    <button class="action-btn btn-undo" onclick="undoLastMove()">↩ Undo</button>
+                    <button class="action-btn btn-clear" onclick="clearCurrentStage()">✖ Clear</button>
+                </div>
+                
+                <div id="table-wrapper">
+                    <table class="game-table" id="game-table">
+                        <thead>
+                            <tr>
+                                <th class="col-enzyme">Enzyme</th>
+                                <th class="col-source">Source</th>
+                                <th class="col-class">Class</th>
+                                <th class="col-substrate">Substrate</th>
+                                <th class="col-site">Major site</th>
+                                <th class="col-product">End product of digestion</th>
+                                <th class="col-absorb">Means of enterocyte absorption</th>
+                            </tr>
+                        </thead>
+                        <tbody id="table-body">
+                            </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="inventory-wrapper">
+            <div class="inventory-header">Fragment Repository</div>
+            <div class="inventory-pool" id="pool"></div>
+        </div>
+
+    </div>
+
+    <div id="report-modal" class="report-modal">
+        <div class="report-card">
+            <div class="report-header">GAME RESULTS</div>
+            <div class="report-content">
+                <div class="user-details-grid" id="report-user-details"></div>
+                <table class="report-table">
+                    <thead><tr><th>Stage</th><th>Status</th><th>Score</th></tr></thead>
+                    <tbody id="report-body"></tbody>
+                </table>
+                <div id="final-verdict" style="text-align:center; font-weight:900; font-size:1.6rem; margin:30px 0; padding:20px; border:3px solid #000; text-transform:uppercase;"></div>
+                <div style="text-align:center; color:#555; font-style:italic; margin-bottom:30px; font-weight:bold; font-size:1.3rem;" id="quote-area"></div>
+                <div style="display:flex; gap:10px; justify-content:center;">
+                    <button class="auth-btn" style="background:#5d4037; color:#fff;" onclick="window.print()">DOWNLOAD RESULT</button>
+                    <button class="auth-btn" onclick="resetGameSession()">INITIATE NEW SESSION</button>
+                </div>
+                <div class="watermark-text">&copy; 2025 Alagbonsi A.I., Salman T.M., Dada M.O., Okedun E.S., Ajibola A.A., Adepoju A.A., Gbolagade K.A., Marcondes F.K.</div>
+            </div>
+        </div>
+        <canvas id="confetti" style="position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:5001;"></canvas>
+    </div>
+
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyA2zQtQ5KiQDlxEtLun5xeHt361g_l4jro",
+            authDomain: "physiopuzzle-af7d0.firebaseapp.com",
+            projectId: "physiopuzzle-af7d0",
+            storageBucket: "physiopuzzle-af7d0.firebasestorage.app",
+            messagingSenderId: "627635975940",
+            appId: "1:627635975940:web:e3704ddc88b077a6bd0251",
+            measurementId: "G-HY664SZJZG"
+        };
+        try { if (typeof firebase !== 'undefined' && !firebase.apps.length) firebase.initializeApp(firebaseConfig); } catch(e) { console.warn("Firebase Init Error:", e); }
+        const auth = (typeof firebase !== 'undefined' && firebase.auth) ? firebase.auth() : null;
+        const db = (typeof firebase !== 'undefined' && firebase.firestore) ? firebase.firestore() : null;
+
+        let isSignUp = false; let currentUser = null; let userProfile = null; 
+
+        const cachedUser = localStorage.getItem('gutdigest_user');
+        if (cachedUser) {
+            try {
+                userProfile = JSON.parse(cachedUser);
+                currentUser = { email: userProfile.email, uid: "offline_cached_uid", emailVerified: true };
+                document.getElementById('auth-screen').style.display = 'none';
+                setTimeout(() => {
+                    const disp = document.getElementById('display-username');
+                    if(disp && userProfile.fullName) disp.innerText = `Welcome, ${userProfile.fullName} (${userProfile.institution})`;
+                    initGame();
+                }, 100);
+            } catch(e) { console.log("Cache parse error", e); }
+        }
+
+        if(auth) {
+            auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL).then(() => {
+                auth.onAuthStateChanged(user => {
+                    if(user) {
+                        currentUser = user;
+                        if(db) {
+                            db.collection('users').doc(user.uid).get().then(doc => {
+                                if(doc.exists) {
+                                    userProfile = doc.data();
+                                    localStorage.setItem('gutdigest_user', JSON.stringify(userProfile));
+                                    const disp = document.getElementById('display-username');
+                                    if(disp && userProfile.fullName) disp.innerText = `Welcome, ${userProfile.fullName} (${userProfile.institution})`;
+                                }
+                            }).catch(e => console.log(e));
+                        }
+                        document.getElementById('auth-screen').style.display = 'none';
+                        if(!cachedUser) initGame();
+                        initLiveStats();
+                    } else {
+                        if(!currentUser) document.getElementById('auth-screen').style.display = 'flex';
+                    }
+                });
+            }).catch(e => console.log(e));
+        }
+
+        function handleLogout() {
+            if(confirm("Sign out?")) {
+                localStorage.removeItem('gutdigest_user'); 
+                localStorage.removeItem('gutdigest_save');
+                auth.signOut().then(() => { location.reload(); });
+            }
+        }
+
+        function handleContact() { document.getElementById('contact-modal').style.display = 'flex'; }
+        function closeContact() { document.getElementById('contact-modal').style.display = 'none'; }
+        
+        function updateZoom(val) { 
+            document.getElementById('scalable-content').style.zoom = val; 
+        }
+        function adjustZoom(delta) {
+            const range = document.getElementById('zoomRange');
+            let val = parseFloat(range.value) + delta;
+            if(val >= 0.5 && val <= 1.5) {
+                val = Math.round(val * 10) / 10;
+                range.value = val;
+                updateZoom(val);
+            }
+        }
+
+        let isForgotMode = false;
+        function toggleForgotMode() {
+            isForgotMode = !isForgotMode;
+            document.getElementById('login-form').style.display = 'none';
+            document.getElementById('signup-form').style.display = 'none';
+            document.getElementById('forgot-form').style.display = 'none';
+            document.getElementById('main-toggle-link').style.display = 'none'; 
+            document.getElementById('auth-error').innerText = "";
+            if (isForgotMode) {
+                document.getElementById('form-title').innerText = "Reset\nPassword";
+                document.getElementById('forgot-form').style.display = 'flex';
+            } else {
+                document.getElementById('form-title').innerText = "GutDigest\nLogin";
+                document.getElementById('login-form').style.display = 'flex';
+                document.getElementById('main-toggle-link').style.display = 'block'; 
+                isSignUp = false; 
+                document.getElementById('auth-toggle-text').innerText = "New User? Sign Up Here";
+            }
+        }
+
+        function resetPassword() {
+            const email = document.getElementById('forgot-email').value;
+            if(!email) { document.getElementById('auth-error').innerText = "Please enter email."; return; }
+            auth.sendPasswordResetEmail(email).then(() => {
+                alert("Password reset email sent!"); toggleForgotMode(); 
+            }).catch((error) => { document.getElementById('auth-error').innerText = error.message; });
+        }
+
+        function toggleAuthMode() {
+            if(isForgotMode) return; 
+            isSignUp = !isSignUp;
+            document.getElementById('login-form').style.display = isSignUp ? 'none' : 'flex';
+            document.getElementById('signup-form').style.display = isSignUp ? 'flex' : 'none';
+            document.getElementById('form-title').innerText = isSignUp ? "GutDigest\nSign Up" : "GutDigest\nLogin";
+            document.getElementById('auth-toggle-text').innerText = isSignUp ? "Already have an account? Login" : "New User? Sign Up Here";
+            document.getElementById('auth-error').innerText = "";
+        }
+
+        function resendVerification() {
+            if(auth.currentUser) {
+                const btn = document.getElementById('resend-btn');
+                btn.innerText = "Sending...";
+                auth.currentUser.sendEmailVerification().then(() => {
+                    btn.innerText = "Email Resent! Check Spam.";
+                    alert("Email sent!");
+                }).catch(e => { alert("Error: " + e.message); btn.innerText = "Resend Email"; });
+            }
+        }
+
+        function handleAuth() {
+            if(!auth) { alert("Critical Error: Database connection failed."); return; }
+            const errorDiv = document.getElementById('auth-error'); errorDiv.innerText = "";
+            if(isSignUp) {
+                const email = document.getElementById('signup-email').value;
+                const password = document.getElementById('signup-password').value;
+                const newProfile = {
+                    email: email, 
+                    fullName: document.getElementById('fullName').value,
+                    institution: document.getElementById('institution').value,
+                    course: document.getElementById('course').value,
+                    level: document.getElementById('level').value,
+                    role: document.getElementById('role').value,
+                    country: document.getElementById('country').value,
+                    joined: new Date(), attempts: 0, personalWins: 0, personalFails: 0
+                };
+                if(!email || !password || !newProfile.fullName || !newProfile.institution || !newProfile.country) {
+                    errorDiv.innerText = "Please complete all profile fields."; return;
+                }
+                auth.createUserWithEmailAndPassword(email, password).then(cred => {
+                    cred.user.sendEmailVerification();
+                    userProfile = newProfile; 
+                    localStorage.setItem('gutdigest_user', JSON.stringify(userProfile));
+                    return db.collection('users').doc(cred.user.uid).set(newProfile)
+                        .then(() => {
+                            document.getElementById('verify-email-display').innerText = email;
+                            document.getElementById('auth-screen').style.display = 'none';
+                            document.getElementById('verify-screen').style.display = 'flex';
+                        });
+                }).catch(e => { errorDiv.innerText = e.message; alert("Registration Error: " + e.message); });
+            } else {
+                const email = document.getElementById('login-email').value;
+                const password = document.getElementById('login-password').value;
+                if(!email || !password) { errorDiv.innerText = "Enter email and password."; return; }
+                auth.signInWithEmailAndPassword(email, password).then(cred => {
+                    if (cred.user.emailVerified) {
+                        document.getElementById('auth-screen').style.display = 'none';
+                        if(!cachedUser) initGame();
+                    } else {
+                        document.getElementById('verify-email-display').innerText = email;
+                        document.getElementById('auth-screen').style.display = 'none';
+                        document.getElementById('verify-screen').style.display = 'flex';
+                    }
+                }).catch(e => { errorDiv.innerText = e.message; alert("Login Error: " + e.message); });
+            }
+        }
+
+        const STAGES = [
+            {
+                title: "Stage 1: Carbohydrate Digestion",
+                desc: "Complete the table for Carbohydrate Enzymes. ↔️ Drag chips to fill the table. Slide horizontally to view all columns. 👆 Tap to select a chip, then tap a slot to drop it.",
+                rows: [
+                    { name: "Salivary amylase", source: "Salivary glands", class: "Carbohydrase", substrate: "α-1,4 glycosidic bond", site: "Mouth", product: "Maltose, maltotriose, and α-limit dextrins", absorb: "Not directly absorbed" },
+                    { name: "Pancreatic amylase", source: "Pancreas", class: "Carbohydrase", substrate: "α-1,4 glycosidic bond", site: "Duodenum", product: "Maltose, maltotriose, and α-limit dextrins", absorb: "Not directly absorbed" },
+                    { name: "Isomaltase", source: "Enterocytes", class: "α-limit dextrinase", substrate: "α-1,6 glycosidic bond", site: "Small intestine", product: "Glucose", absorb: "SGLT 1 / GLUT 2" },
+                    { name: "Sucrase", source: "Enterocytes", class: "Disaccharidase", substrate: "Sucrose", site: "Jejunum", product: "Glucose + fructose", absorb: "GLUT 5 / GLUT 2" },
+                    { name: "Lactase", source: "Enterocytes", class: "Disaccharidase", substrate: "Lactose", site: "Jejunum", product: "Glucose + galactose", absorb: "SGLT 1 / GLUT 2" },
+                    { name: "Maltase", source: "Enterocytes", class: "Disaccharidase", substrate: "Maltose", site: "Jejunum", product: "Glucose", absorb: "SGLT 1 / GLUT 2" }
+                ],
+                distractors: [ "Stomach", "Triglycerides", "Lipase", "Amino acids", "Pepsin", "Passive diffusion", "PEPT1" ]
+            },
+            {
+                title: "Stage 2: Lipid Digestion",
+                desc: "Complete the table for Lipid Enzymes. ↔️ Drag chips to fill the table. Slide horizontally to view all columns. 👆 Tap to select a chip, then tap a slot to drop it.",
+                rows: [
+                    { name: "Lingual lipase", source: "Tongue glands", class: "Lipase", substrate: "Triglycerides", site: "Mouth and stomach", product: "Free fatty acids + diglycerides", absorb: "Passive diffusion + FATP" },
+                    { name: "Gastric lipase", source: "Stomach", class: "Lipase", substrate: "Triglycerides", site: "Stomach", product: "Free fatty acids + diglycerides", absorb: "Passive diffusion + FATP" },
+                    { name: "Pancreatic lipase / colipase", source: "Pancreas", class: "Lipase", substrate: "Triglycerides", site: "Duodenum", product: "Free fatty acids + monoglycerides", absorb: "Passive diffusion + FATP" },
+                    { name: "Pancreatic esterase", source: "Pancreas", class: "Lipase", substrate: "Cholesterol esters", site: "Duodenum", product: "Free fatty acids + unesterified cholesterols", absorb: "FATP + NPC1L1-ABCG" },
+                    { name: "Phospholipase", source: "Pancreas", class: "Lipase", substrate: "Phospholipids", site: "Duodenum", product: "Free fatty acids + lysophospholipids", absorb: "Passive diffusion" }
+                ],
+                distractors: [ "Glucose", "SGLT 1", "Maltose", "Peptide bonds", "Salivary glands", "PEPT1" ]
+            },
+            {
+                title: "Stage 3: Protein Digestion",
+                desc: "Complete the table for Proteases. ↔️ Drag chips to fill the table. Slide horizontally to view all columns. 👆 Tap to select a chip, then tap a slot to drop it.",
+                rows: [
+                    { name: "Pepsin", source: "Stomach (chief cells)", class: "Endopeptidase", substrate: "Proteins", site: "Stomach", product: "Peptides", absorb: "PEPT1" },
+                    { name: "Trypsin", source: "Pancreas", class: "Endopeptidase", substrate: "Internal peptide bonds", site: "Duodenum", product: "Peptides", absorb: "PEPT1" },
+                    { name: "Chymotrypsin", source: "Pancreas", class: "Endopeptidase", substrate: "Internal peptide bonds", site: "Duodenum", product: "Peptides", absorb: "PEPT1" },
+                    { name: "Elastase", source: "Pancreas", class: "Endopeptidase", substrate: "Internal peptide bonds", site: "Duodenum", product: "Peptides", absorb: "PEPT1" },
+                    { name: "Carboxypeptidase", source: "Pancreas", class: "Exopeptidase", substrate: "Peptide ends", site: "Duodenum", product: "Amino acids", absorb: "Amino acid transporters" },
+                    { name: "Aminopeptidase", source: "Small intestine", class: "Exopeptidase", substrate: "Peptide ends", site: "Duodenum", product: "Amino acids", absorb: "Amino acid transporters" }
+                ],
+                distractors: [ "Fatty acids", "Sucrose", "Mouth", "Micelles", "Alpha-limit dextrins", "SGLT 1", "FATP" ]
+            }
+        ];
+
+        let currentStageIdx = 0; let globalState = {}; let moveHistory = []; let draggedItem = null, dragClone = null; const palette = ['c1', 'c2', 'c3', 'c4', 'c5']; let keysPressed = {}; let selectedChip = null; let isPointerDown = false; let isDragging = false; let startX = 0; let startY = 0; let dragThreshold = 5;
+
+        // NEW: SHUFFLE ROWS FUNCTION
+        function shuffleRows() {
+            STAGES.forEach(stage => {
+                // Fisher-Yates shuffle for rows
+                for (let i = stage.rows.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [stage.rows[i], stage.rows[j]] = [stage.rows[j], stage.rows[i]];
+                }
+            });
+        }
+
+        function initGame() {
+            // REMOVED: const saved = localStorage.getItem('gutdigest_save');
+            // This ensures a fresh start every time
+            globalState = {};
+            
+            shuffleRows(); // Randomize enzyme order on every init
+            renderNavigation(); loadStage(0); 
+            document.addEventListener('keydown', handleKeyDown); document.addEventListener('keyup', handleKeyUp);
+        }
+
+        function initLiveStats() {
+            if(!db || !auth.currentUser) return; 
+            db.collection('users').onSnapshot(snapshot => {
+                let totalResearchers = snapshot.size; let totalPasses = 0; let totalFails = 0;
+                snapshot.forEach(doc => { const data = doc.data(); totalPasses += (data.personalWins || 0); totalFails += (data.personalFails || 0); });
+                document.getElementById('global-players').innerText = totalResearchers;
+                document.getElementById('global-passes').innerText = totalPasses;
+                document.getElementById('global-fails').innerText = totalFails;
+            }, error => { console.log("Stats error:", error); });
+        }
+
+        function renderNavigation() {
+            const nav = document.getElementById('nav-tabs'); nav.innerHTML = '';
+            STAGES.forEach((stage, idx) => {
+                const tab = document.createElement('div');
+                tab.className = `nav-tab ${idx === 0 ? 'active' : ''}`;
+                tab.id = `tab-${idx}`;
+                tab.innerText = `STAGE ${idx + 1}`;
+                tab.onclick = () => switchStage(idx);
+                nav.appendChild(tab);
+            });
+            checkGlobalSubmissionStatus();
+        }
+
+        function switchStage(newIdx) {
+            saveCurrentStageState();
+            document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+            document.getElementById(`tab-${newIdx}`).classList.add('active');
+            loadStage(newIdx);
+        }
+
+        function saveCurrentStageState() {
+            const zones = document.querySelectorAll('.drop-zone');
+            if (!globalState[currentStageIdx]) globalState[currentStageIdx] = {};
+            
+            zones.forEach(zone => {
+                const key = zone.id; // Unique ID per cell: zone-{r}-{c}
+                if (zone.children.length > 0) {
+                    globalState[currentStageIdx][key] = zone.children[0].innerText;
+                } else {
+                    delete globalState[currentStageIdx][key];
+                }
+            });
+
+            // Note: We are no longer loading from localStorage on init, 
+            // but saving it allows for reload persistence if you wanted to add it back later.
+            // For now, it just saves state for the current session if user switches tabs.
+            localStorage.setItem('gutdigest_save', JSON.stringify(globalState));
+            const filledCount = Object.keys(globalState[currentStageIdx]).length;
+            const tab = document.getElementById(`tab-${currentStageIdx}`);
+            const totalSlots = STAGES[currentStageIdx].rows.length * 6;
+            if (filledCount === totalSlots) tab.classList.add('filled');
+            else tab.classList.remove('filled');
+            checkGlobalSubmissionStatus();
+        }
+
+        function updateZoneVisuals() {
+            document.querySelectorAll('.drop-zone').forEach(zone => {
+                if (zone.children.length > 0) zone.classList.add('filled');
+                else zone.classList.remove('filled');
+            });
+        }
+
+        function clearCurrentStage() {
+            const zones = document.querySelectorAll('.drop-zone');
+            zones.forEach(zone => { if (zone.children.length > 0) { const tile = zone.children[0]; document.getElementById('pool').appendChild(tile); } });
+            globalState[currentStageIdx] = {}; saveCurrentStageState(); updateZoneVisuals(); playClick();
+        }
+
+        function loadStage(idx) {
+            currentStageIdx = idx; const stageData = STAGES[idx];
+            document.getElementById('stage-title').innerText = stageData.title;
+            document.getElementById('stage-desc').innerText = stageData.desc;
+            
+            const tbody = document.getElementById('table-body');
+            tbody.innerHTML = '';
+            const pool = document.getElementById('pool');
+            pool.innerHTML = '';
+            
+            let allAnswers = []; // Collect all correct answers to put in pool
+            
+            stageData.rows.forEach((row, rIndex) => {
+                const tr = document.createElement('tr');
+                
+                // Static Enzyme Name Cell
+                const tdName = document.createElement('td');
+                tdName.className = 'col-enzyme';
+                tdName.innerText = row.name;
+                tr.appendChild(tdName);
+
+                // Draggable Cells
+                const fields = ['source', 'class', 'substrate', 'site', 'product', 'absorb'];
+                const colClasses = ['col-source', 'col-class', 'col-substrate', 'col-site', 'col-product', 'col-absorb'];
+                
+                fields.forEach((field, cIndex) => {
+                    const td = document.createElement('td');
+                    td.className = colClasses[cIndex];
+                    
+                    const zone = document.createElement('div');
+                    zone.className = 'drop-zone';
+                    // Unique ID: zone-row-col
+                    zone.id = `zone-${rIndex}-${field}`; 
+                    zone.onclick = function() { handleZoneClick(this); };
+                    
+                    // Restore state (from memory only since we wiped LS load)
+                    if (globalState[idx] && globalState[idx][zone.id]) {
+                        zone.appendChild(createChip(globalState[idx][zone.id]));
+                        zone.classList.add('filled');
+                    }
+                    
+                    td.appendChild(zone);
+                    tr.appendChild(td);
+                    
+                    allAnswers.push(row[field]);
+                });
+                
+                tbody.appendChild(tr);
+            });
+            
+            // Add distractors and shuffle
+            let fullPool = [...allAnswers, ...stageData.distractors];
+            // Remove already placed items
+            const placed = Object.values(globalState[idx] || {});
+            placed.forEach(p => {
+                const idx = fullPool.indexOf(p);
+                if (idx > -1) fullPool.splice(idx, 1);
+            });
+            
+            shuffleArray(fullPool);
+            fullPool.forEach(text => { pool.appendChild(createChip(text)); });
+        }
+
+        function createChip(text) {
+            const chip = document.createElement('div');
+            const colClass = palette[Math.floor(Math.random() * palette.length)];
+            chip.className = `chip ${colClass}`; chip.innerText = text;
+            chip.addEventListener('pointerdown', handleDragStart); return chip;
+        }
+
+        function shuffleArray(array) { for (let i = array.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [array[i], array[j]] = [array[j], array[i]]; } }
+
+        function recordMove(slotId, text) { moveHistory.push({ stage: currentStageIdx, slot: slotId, text: text }); }
+        
+        function handleDragStart(e) { if (e.button !== 0) return; draggedItem = e.currentTarget; isPointerDown = true; isDragging = false; startX = e.clientX; startY = e.clientY; document.addEventListener('pointermove', handleDragMove); document.addEventListener('pointerup', handleDragEnd); }
+        function handleDragMove(e) { if (!isPointerDown) return; const dx = e.clientX - startX; const dy = e.clientY - startY; const distance = Math.sqrt(dx*dx + dy*dy); if (distance > dragThreshold) { isDragging = true; e.preventDefault(); if (!dragClone) { dragClone = draggedItem.cloneNode(true); dragClone.classList.add('drag-clone'); document.body.appendChild(dragClone); draggedItem.style.opacity = '0.3'; } moveClone(e.clientX, e.clientY); dragClone.style.display = 'none'; const el = document.elementFromPoint(e.clientX, e.clientY); dragClone.style.display = 'flex'; document.querySelectorAll('.drop-zone').forEach(z => z.classList.remove('hover-target')); const zone = el ? el.closest('.drop-zone') : null; if (zone) zone.classList.add('hover-target'); } }
+        function handleDragEnd(e) { 
+            document.removeEventListener('pointermove', handleDragMove); document.removeEventListener('pointerup', handleDragEnd); 
+            isPointerDown = false; 
+            if (isDragging) { 
+                if (dragClone) dragClone.remove(); dragClone = null; draggedItem.style.opacity = '1'; 
+                const el = document.elementFromPoint(e.clientX, e.clientY); 
+                const zone = el ? el.closest('.drop-zone') : null; 
+                const poolArea = el ? el.closest('.inventory-pool') : null; 
+                if (zone) { 
+                    playThud(); 
+                    if (zone.children.length > 0) { 
+                        const existing = zone.children[0]; 
+                        document.getElementById('pool').appendChild(existing); 
+                    } 
+                    zone.appendChild(draggedItem); 
+                    recordMove(zone.id, draggedItem.innerText); 
+                } else if (poolArea) { 
+                    playClick(); 
+                    document.getElementById('pool').appendChild(draggedItem); 
+                } 
+                document.querySelectorAll('.drop-zone').forEach(z => z.classList.remove('hover-target')); 
+                saveCurrentStageState(); 
+                updateZoneVisuals();
+            } else { 
+                handleChipClick(draggedItem); 
+            } 
+            draggedItem = null; 
+        }
+        
+        function handleChipClick(chip) { if (selectedChip === chip) { chip.classList.remove('selected'); selectedChip = null; } else { if(selectedChip) selectedChip.classList.remove('selected'); selectedChip = chip; chip.classList.add('selected'); playClick(); } }
+        function handleZoneClick(zone) { 
+            if (selectedChip) { 
+                if (zone.children.length > 0) { 
+                    const existing = zone.children[0]; 
+                    document.getElementById('pool').appendChild(existing); 
+                } 
+                zone.appendChild(selectedChip); 
+                recordMove(zone.id, selectedChip.innerText); 
+                selectedChip.classList.remove('selected'); 
+                selectedChip = null; 
+                playThud(); 
+                saveCurrentStageState(); 
+                updateZoneVisuals();
+            } 
+        }
+        function moveClone(x, y) { if (dragClone) { dragClone.style.left = (x - 75) + 'px'; dragClone.style.top = (y - 30) + 'px'; } }
+        
+        function handleKeyDown(e) { keysPressed[e.key.toLowerCase()] = true; if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') { e.preventDefault(); undoLastMove(); } if (keysPressed['a'] && keysPressed['b'] && keysPressed['c']) { triggerDevAutoFill(); } }
+        function handleKeyUp(e) { keysPressed[e.key.toLowerCase()] = false; }
+        
+        function undoLastMove() { 
+            if (moveHistory.length === 0) return; 
+            const lastMove = moveHistory.pop(); 
+            if (lastMove.stage !== currentStageIdx) { switchStage(lastMove.stage); } 
+            const zone = document.getElementById(lastMove.slot); 
+            if (zone && zone.children.length > 0) { 
+                const tile = zone.children[0]; 
+                document.getElementById('pool').appendChild(tile); 
+                playClick(); 
+                saveCurrentStageState(); 
+                updateZoneVisuals();
+            } 
+        }
+        
+        function triggerDevAutoFill() { 
+            const stageData = STAGES[currentStageIdx]; 
+            if (!globalState[currentStageIdx]) globalState[currentStageIdx] = {}; 
+            stageData.rows.forEach((row, rIndex) => {
+                const fields = ['source', 'class', 'substrate', 'site', 'product', 'absorb'];
+                fields.forEach(field => {
+                    const zoneId = `zone-${rIndex}-${field}`;
+                    globalState[currentStageIdx][zoneId] = row[field];
+                });
+            });
+            playFanfare(); loadStage(currentStageIdx); saveCurrentStageState(); keysPressed = {}; 
+        }
+
+        const AudioCtx = window.AudioContext || window.webkitAudioContext; let audioCtx = new AudioCtx();
+        function playThud() { if (audioCtx.state === 'suspended') audioCtx.resume(); const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain(); osc.connect(gain); gain.connect(audioCtx.destination); osc.type = 'square'; osc.frequency.setValueAtTime(80, audioCtx.currentTime); osc.frequency.exponentialRampToValueAtTime(30, audioCtx.currentTime + 0.1); gain.gain.setValueAtTime(0.5, audioCtx.currentTime); gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1); osc.start(); osc.stop(audioCtx.currentTime + 0.1); }
+        function playClick() { if (audioCtx.state === 'suspended') audioCtx.resume(); const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain(); osc.connect(gain); gain.connect(audioCtx.destination); osc.type = 'sine'; osc.frequency.setValueAtTime(800, audioCtx.currentTime); gain.gain.setValueAtTime(0.2, audioCtx.currentTime); gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.08); osc.start(); osc.stop(audioCtx.currentTime + 0.08); }
+        function playFanfare() { if (audioCtx.state === 'suspended') audioCtx.resume(); [523.25, 659.25, 783.99, 1046.50].forEach((f, i) => { setTimeout(() => { const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain(); osc.connect(gain); gain.connect(audioCtx.destination); osc.type = 'triangle'; osc.frequency.setValueAtTime(f, audioCtx.currentTime); gain.gain.setValueAtTime(0.3, audioCtx.currentTime); gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.5); osc.start(); osc.stop(audioCtx.currentTime + 0.5); }, i * 100); }); }
+
+        function checkGlobalSubmissionStatus() {
+            let isComplete = true;
+            STAGES.forEach((stage, idx) => {
+                const totalSlots = stage.rows.length * 6;
+                const filledSlots = globalState[idx] ? Object.keys(globalState[idx]).length : 0;
+                if (filledSlots < totalSlots) isComplete = false;
+            });
+            const btn = document.getElementById('submit-all-btn');
+            if (isComplete) { btn.classList.add('ready'); btn.innerText = "SUBMIT GAME"; btn.disabled = false; }
+            else { btn.classList.remove('ready'); btn.innerText = "FILL ALL TO SUBMIT"; btn.disabled = true; }
+        }
+
+        async function submitSimulation() {
+            const btn = document.getElementById('submit-all-btn');
+            if (!btn.classList.contains('ready')) return;
+            let uData = userProfile || {};
+            if(auth.currentUser && db) { try { const doc = await db.collection('users').doc(auth.currentUser.uid).get(); if(doc.exists) { uData = doc.data(); userProfile = uData; } } catch(e) { console.error(e); } }
+            
+            const userBox = document.getElementById('report-user-details');
+            const name = uData.fullName || "Guest User"; const inst = uData.institution || "N/A"; const email = uData.email || (currentUser ? currentUser.email : "N/A"); const country = uData.country || "N/A";
+            userBox.innerHTML = `<div><strong>Name:</strong> ${name}</div><div><strong>Institution:</strong> ${inst}</div><div><strong>Email:</strong> ${email}</div><div><strong>Country:</strong> ${country}</div>`;
+            const tbody = document.getElementById('report-body'); tbody.innerHTML = '';
+            
+            let totalPassed = 0;
+            STAGES.forEach((stage, idx) => {
+                const userAnswers = globalState[idx] || {}; 
+                let stageCorrect = 0;
+                let totalCells = stage.rows.length * 6;
+                
+                stage.rows.forEach((row, rIndex) => {
+                    const fields = ['source', 'class', 'substrate', 'site', 'product', 'absorb'];
+                    fields.forEach(field => {
+                        const zoneId = `zone-${rIndex}-${field}`;
+                        if (userAnswers[zoneId] === row[field]) stageCorrect++;
+                    });
+                });
+                
+                const isPass = stageCorrect === totalCells; if (isPass) totalPassed++;
+                const tr = document.createElement('tr');
+                tr.innerHTML = `<td style="font-weight:900;">${stage.title.split(':')[1]}</td><td class="${isPass ? 'status-pass' : 'status-fail'}">${isPass ? 'PASSED' : 'FAILED'}</td><td>${stageCorrect} / ${totalCells}</td>`;
+                tbody.appendChild(tr);
+            });
+            
+            const verdict = document.getElementById('final-verdict'); const quote = document.getElementById('quote-area');
+            if (totalPassed === STAGES.length) {
+                verdict.innerText = "GAME PASSED"; verdict.style.color = "#2e7d32"; verdict.style.borderColor = "#2e7d32"; quote.innerText = '"Observation is the passive science, experimentation the active science." — Claude Bernard'; playFanfare(); launchConfetti();
+                if(currentUser && db && currentUser.uid !== "offline_cached_uid") {
+                    db.collection('users').doc(currentUser.uid).set({
+                        lastAttempt: new Date(),
+                        status: "PASSED",
+                        attempts: firebase.firestore.FieldValue.increment(1),
+                        personalWins: firebase.firestore.FieldValue.increment(1)
+                    }, { merge: true });
+                }
+            } else {
+                verdict.innerText = "GAME FAILED"; verdict.style.color = "#c62828"; verdict.style.borderColor = "#c62828"; quote.innerText = "Precision is the soul of physiology.";
+                if(currentUser && db && currentUser.uid !== "offline_cached_uid") {
+                    db.collection('users').doc(currentUser.uid).set({
+                        lastAttempt: new Date(),
+                        status: "Failed",
+                        attempts: firebase.firestore.FieldValue.increment(1),
+                        personalFails: firebase.firestore.FieldValue.increment(1)
+                    }, { merge: true });
+                }
+            }
+            document.getElementById('report-modal').style.display = 'flex';
+        }
+
+        function resetGameSession() {
+            document.getElementById('report-modal').style.display = 'none';
+            localStorage.removeItem('gutdigest_save');
+            globalState = {}; moveHistory = []; currentStageIdx = 0;
+            document.querySelectorAll('.nav-tab').forEach(tab => { tab.classList.remove('filled'); tab.classList.remove('active'); });
+            document.getElementById('tab-0').classList.add('active');
+            
+            // Re-randomize when starting a new session from the modal
+            shuffleRows();
+            
+            loadStage(0); checkGlobalSubmissionStatus(); window.scrollTo(0, 0);
+        }
+
+        async function exportToExcel() {
+            const password = prompt("Enter Admin Password to Download Data:");
+            if (password !== "alagbonsi123") { alert("Access Denied."); return; }
+            alert("Generating Spreadsheet... Please wait.");
+            try {
+                const snapshot = await db.collection('users').get();
+                let csvContent = "data:text/csv;charset=utf-8,Name,Email,Institution,Course,Level,Role,Country,Attempts,Wins,Fails,LastStatus\n";
+                snapshot.forEach(doc => {
+                    const data = doc.data();
+                    const clean = (text) => (text || "").toString().replace(/,/g, " ");
+                    let row = [
+                        clean(data.fullName), clean(data.email), clean(data.institution), clean(data.course),
+                        clean(data.level), clean(data.role), clean(data.country),
+                        data.attempts || 0, data.personalWins || 0, data.personalFails || 0, clean(data.status || "In Progress")
+                    ];
+                    csvContent += row.join(",") + "\n";
+                });
+                const encodedUri = encodeURI(csvContent);
+                const link = document.createElement("a");
+                link.setAttribute("href", encodedUri);
+                link.setAttribute("download", "Physiology_Game_Results.csv");
+                document.body.appendChild(link); link.click();
+            } catch (error) { console.error(error); alert("Error exporting data."); }
+        }
+
+        function launchConfetti() {
+            const canvas = document.getElementById('confetti'); const ctx = canvas.getContext('2d'); canvas.width = window.innerWidth; canvas.height = window.innerHeight;
+            const particles = []; const colors = ['#d4af37', '#ffffff', '#2e7d32', '#c62828'];
+            for (let i = 0; i < 300; i++) { particles.push({ x: Math.random() * canvas.width, y: Math.random() * canvas.height - canvas.height, vx: (Math.random() - 0.5) * 6, vy: Math.random() * 5 + 3, color: colors[Math.floor(Math.random() * colors.length)], size: Math.random() * 8 + 4, rotation: Math.random() * 360, dRot: (Math.random() - 0.5) * 10 }); }
+            function animate() { ctx.clearRect(0, 0, canvas.width, canvas.height); particles.forEach(p => { p.y += p.vy; p.x += p.vx; p.rotation += p.dRot; ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.rotation * Math.PI / 180); ctx.fillStyle = p.color; ctx.fillRect(-p.size/2, -p.size/2, p.size, p.size); ctx.restore(); if (p.y > canvas.height) p.y = -20; }); requestAnimationFrame(animate); } animate();
+        }
+    </script>
+</body>
+</html>
