@@ -1,0 +1,1996 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=0.2, maximum-scale=5.0">
+    <meta name="description" content="Advanced Medical Physiology Simulation: GutDigest">
+    <meta name="author" content="Abdullateef Isiaka Alagbonsi, Toyin Mohammed Salman, Mary Oluwatobi Dada, Elijah Seun Okedun, Aminat Abiola Ajibola, Aolat Adepeju Adepoju, Kazeem Adewale Gbolagade, Fernanda Klein Marcondes">
+    <title>GutDigest</title>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&family=Lato:wght@300;400;700;900&family=Crimson+Text:ital,wght@0,400;0,600;0,700;1,700&display=swap" rel="stylesheet">
+    
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+
+    <style>
+        /* 1. VISUAL THEME */
+        :root {
+            --wood-darkest: #1a0f0a; --wood-dark: #3e2723; --wood-medium: #5d4037; --wood-light: #8d6e63;
+            --brass-primary: #d4af37; --brass-highlight: #ffe57f; --brass-shadow: #8c6b0d;
+            --paper-texture: #f5f5f5; --felt-green: #1b3c24; 
+            
+            /* EXACT TABLE COLORS */
+            --tbl-pink: #fccaff;
+            --tbl-yellow: #ffff00;
+            --tbl-blue: #ccffff;
+            --tbl-border: #3e2723;
+
+            /* INVENTORY THEME */
+            --velvet-blue: #0a1024;
+            
+            /* CHIP COLORS */
+            --chip-blue: linear-gradient(135deg, #3949ab, #1a237e); 
+            --chip-green: linear-gradient(135deg, #2e7d32, #1b5e20);
+            --chip-purple: linear-gradient(135deg, #8e24aa, #4a148c); 
+            --chip-red: linear-gradient(135deg, #c62828, #b71c1c);
+            --chip-cyan: linear-gradient(135deg, #00838f, #006064);
+        }
+
+        * { box-sizing: border-box; touch-action: manipulation; }
+        html { font-size: 16px; height: 100%; }
+
+        /* --- TINY SCROLLBAR STYLING (6px) --- */
+        ::-webkit-scrollbar {
+            width: 6px; 
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(26, 15, 10, 0.3); 
+            border-radius: 3px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: linear-gradient(180deg, #d4af37, #8c6b0d);
+            border-radius: 3px;
+            border: 1px solid rgba(0,0,0,0.2);
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: linear-gradient(180deg, #ffe57f, #d4af37); 
+        }
+        ::-webkit-scrollbar-corner {
+            background: transparent;
+        }
+        
+        * {
+            scrollbar-width: thin;
+            scrollbar-color: #d4af37 rgba(26, 15, 10, 0.3);
+        }
+
+        body { 
+            font-family: 'Lato', sans-serif; 
+            background-color: #0f0502; 
+            background-image: radial-gradient(circle at 50% 50%, #2d1a12 0%, #1a0f0a 60%, #050201 100%); 
+            color: #000; 
+            margin: 0; padding: 0; 
+            height: 100vh; width: 100vw; 
+            display: flex; flex-direction: column; 
+            overflow: hidden; 
+        }
+
+        /* 2. HEADER */
+        #admin-btn-visible { 
+            position: fixed; top: 0; left: 50%; transform: translateX(-50%); 
+            width: 20px; height: 20px; 
+            background: radial-gradient(circle, #d4af37 0%, #8c6b0d 100%); 
+            border: 1px solid rgba(255,255,255,0.1); 
+            border-top: none; 
+            border-radius: 50%; 
+            box-shadow: 0 2px 8px rgba(212, 175, 55, 0.3); 
+            cursor: pointer; 
+            z-index: 5000; 
+            opacity: 0; 
+            pointer-events: none;
+            transition: all 0.3s ease;
+        }
+        #admin-btn-visible.admin-mode { 
+            opacity: 0.15; 
+            pointer-events: all; 
+        }
+        #admin-btn-visible.admin-mode:hover { 
+            opacity: 0.8; 
+            transform: translateX(-50%) scale(1.2);
+            box-shadow: 0 0 20px rgba(212, 175, 55, 0.8);
+        }
+
+        header { 
+            width: 100%; padding: 8px 20px; 
+            background-color: var(--wood-dark); border-bottom: 4px solid var(--wood-darkest); 
+            box-shadow: 0 5px 20px rgba(0,0,0,0.8); z-index: 1000; 
+            display: flex; flex-direction: column; gap: 5px; flex-shrink: 0; color: #e0d0c0;
+        }
+        .header-top { display: flex; justify-content: space-between; align-items: center; width: 100%; }
+        
+        h1 { 
+            font-family: 'Crimson Text', serif; 
+            font-size: 2.2rem; 
+            margin: 0; 
+            color: var(--brass-primary); 
+            text-transform: none; 
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.8);
+        }
+
+        .header-controls { display: flex; align-items: center; gap: 10px; }
+        .zoom-control { display: flex; align-items: center; color: var(--brass-primary); font-family: 'Lato', sans-serif; font-weight: bold; font-size: 0.9rem; gap: 5px; background: rgba(0,0,0,0.3); padding: 4px 8px; border-radius: 12px; border: 1px solid #5d4037; }
+        input[type=range] { width: 80px; cursor: pointer; accent-color: var(--brass-primary); margin: 0 5px; }
+        .zoom-btn { background: var(--brass-primary); border: none; color: #1a0f0a; width: 20px; height: 20px; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-weight: 900; cursor: pointer; font-size: 1rem; padding-bottom: 2px; }
+        
+        #logout-btn, #contact-btn { background: transparent; border: 1px solid #d4af37; color: #d4af37; font-family: 'Cinzel', serif; font-weight: bold; padding: 0.4rem 0.8rem; font-size: 0.8rem; cursor: pointer; border-radius: 4px; text-decoration: none; }
+        #logout-btn:hover, #contact-btn:hover { background: #d4af37; color: #1a0f0a; box-shadow: 0 0 10px rgba(212, 175, 55, 0.5); }
+
+        #submit-all-btn { background-color: #1b5e20; color: #81c784; font-family: 'Cinzel', serif; font-weight: 900; font-size: 1rem; padding: 0.5rem 1.5rem; border: 2px solid #0d3310; border-radius: 4px; cursor: not-allowed; opacity: 0.6; text-transform: uppercase; letter-spacing: 1px; box-shadow: 0 4px 0 rgba(0,0,0,0.5); }
+        #submit-all-btn.ready { background: linear-gradient(135deg, #d4af37 0%, #ffe57f 50%, #8c6b0d 100%); color: #1a0f0a; border-color: var(--brass-highlight); cursor: pointer; opacity: 1; box-shadow: 0 5px 0 #8c6b0d, 0 0 15px rgba(212, 175, 55, 0.4); animation: pulseGold 2.5s infinite; }
+        #submit-all-btn.ready:active { transform: translateY(5px); box-shadow: 0 0 0 #8c6b0d; }
+        @keyframes pulseGold { 0% { filter: brightness(1); } 50% { filter: brightness(1.2); } 100% { filter: brightness(1); } }
+
+        #live-stats-bar { width: 100%; background: rgba(0,0,0,0.5); color: var(--brass-primary); padding: 4px; text-align: center; font-family: 'Cinzel', serif; font-size: 0.8rem; border-top: 1px solid #5d4037; display: flex; justify-content: center; gap: 20px; }
+        #global-passes { color: #4caf50; font-weight: 900; } 
+        #global-fails { color: #f44336; font-weight: 900; }
+
+        .nav-scroller { width: 100%; overflow-x: auto; display: flex; gap: 4px; padding-bottom: 2px; scrollbar-width: none; }
+        .nav-tab { flex: 1; min-width: 8rem; background: #2d1a12; color: #8d6e63; padding: 0.6rem 0.3rem; border: 1px solid #3e2723; border-radius: 6px 6px 0 0; font-family: 'Cinzel', serif; font-size: 0.95rem; font-weight: 700; text-align: center; cursor: pointer; transition: all 0.2s; position: relative; text-shadow: 0 1px 1px rgba(0,0,0,0.5); }
+        .nav-tab.active { background: var(--brass-primary); color: #1a0f0a; border-color: var(--brass-highlight); box-shadow: 0 -2px 10px rgba(212, 175, 55, 0.3); z-index: 10; transform: translateY(-3px); font-size: 1.05rem; }
+        .nav-tab.filled::after { content: '✓'; position: absolute; top: 4px; right: 4px; font-size: 0.8rem; color: #2e7d32; font-weight: 900; }
+
+        /* 3. SCROLL & ZOOM WRAPPER */
+        .main-scroll-container {
+            flex: 1;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: #1b100d;
+        }
+
+        #scalable-content {
+            width: 100%;
+            height: 100%; 
+            transform-origin: top left;
+            zoom: 0.8;
+            display: flex;
+            flex-direction: column;
+            box-sizing: border-box;
+            padding: 10px;
+        }
+
+        /* 4. GAME LAYOUT */
+        .game-layout {
+            display: flex;
+            width: 100%;
+            height: 100%; 
+            flex-grow: 1;
+            gap: 15px;
+            overflow: hidden; 
+        }
+
+        .board-wrapper {
+            flex: 5; 
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto; 
+            overflow-x: hidden;
+            min-width: 0; 
+            height: 100%;
+        }
+
+        .board-card {
+            background: linear-gradient(135deg, #5d4037, #3e2723);
+            border: 6px solid #2d1a12;
+            border-radius: 6px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.8), inset 0 0 20px rgba(0,0,0,0.5), 0 0 0 1px var(--brass-shadow);
+            padding: 10px;
+            width: 100%;
+            flex-grow: 1;
+            display: flex; flex-direction: column;
+            position: relative;
+        }
+
+        .inventory-wrapper {
+            flex: 1; 
+            min-width: 280px;
+            max-width: 320px;
+            height: 100%;
+            background: var(--velvet-blue);
+            background-image: radial-gradient(circle at top right, #1a237e 0%, #000 100%);
+            border: 6px solid var(--brass-shadow);
+            border-radius: 6px;
+            display: flex;
+            flex-direction: column;
+            z-index: 50;
+            box-shadow: -5px 0 20px rgba(0,0,0,0.5);
+            overflow: hidden;
+        }
+
+        .inventory-header { 
+            background: linear-gradient(to right, #000, #1a237e);
+            color: #fff; padding: 12px; 
+            text-align: center; font-family: 'Cinzel', serif; font-weight: 700; font-size: 1rem; 
+            border-bottom: 2px solid var(--brass-primary); 
+            text-transform: uppercase; letter-spacing: 1px; 
+            flex-shrink: 0;
+        }
+        
+        .inventory-pool { 
+            flex: 1; 
+            padding: 10px; 
+            overflow: auto; 
+            display: grid; 
+            grid-template-columns: 1fr 1fr; 
+            grid-auto-rows: min-content; 
+            gap: 10px; 
+            align-content: start;
+            padding-bottom: 60px;
+            background-image: url("data:image/svg+xml,%3Csvg width='4' height='4' viewBox='0 0 4 4' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 3h1v1H1V3zm2-2h1v1H3V1z' fill='%23ffffff' fill-opacity='0.05'/%3E%3C/svg%3E");
+        }
+
+        .mid-copyright { width: 100%; background: #0f0502; color: #8d6e63; padding: 6px; text-align: center; font-family: 'Lato', sans-serif; font-size: 0.8rem; border: 1px solid #3e2723; border-radius: 4px; margin-bottom: 10px; opacity: 0.9; flex-shrink: 0; }
+        
+        .stage-title-display { 
+            background: var(--wood-dark); color: var(--brass-primary); 
+            font-family: 'Cinzel', serif; font-weight: 900; font-size: 1.3rem; 
+            padding: 6px; text-align: center; 
+            border: 2px solid var(--brass-primary); border-radius: 4px; 
+            margin-bottom: 5px; text-transform: uppercase; flex-shrink: 0;
+        }
+        
+        .stage-description { 
+            color: #3e2723; font-family: 'Lato', sans-serif; font-weight: 700; font-size: 1.1rem; 
+            font-style: italic; text-align: center; padding: 10px; 
+            background: #f3e5ab; 
+            box-shadow: 0 2px 5px rgba(0,0,0,0.4);
+            border-radius: 2px; margin-bottom: 10px; 
+            border: 1px solid #d7ccc8; flex-shrink: 0;
+        }
+
+        .stage-footnote {
+            flex-shrink: 0; 
+            margin-top: auto;
+            padding-top: 10px;
+            border-top: 2px solid #3e2723;
+            font-family: 'Crimson Text', serif;
+            font-size: 1rem;
+            color: #000; 
+            font-weight: 600;
+            line-height: 1.4;
+            background: #fff9c4; 
+            padding: 10px;
+            border-radius: 0 0 4px 4px;
+            box-shadow: inset 0 2px 5px rgba(0,0,0,0.1);
+        }
+        .stage-footnote strong { font-weight: 900; color: #b71c1c; text-decoration: none; text-transform: uppercase; font-size: 0.8rem; }
+
+        .action-bar { display: flex; justify-content: flex-end; gap: 10px; margin-bottom: 5px; flex-shrink: 0; }
+        .action-btn { padding: 6px 14px; border-radius: 4px; font-family: 'Cinzel', serif; font-weight: 900; font-size: 0.85rem; cursor: pointer; color: #fff; border: 1px solid rgba(255,255,255,0.2); }
+        .btn-undo { background: #5d4037; } .btn-clear { background: #8e0000; }
+
+        #table-wrapper { 
+            flex-grow: 1;
+            width: 100%;
+            min-height: 50vh; 
+            overflow: auto;
+            background: #f3e5ab; 
+            border: 1px solid #3e2723;
+            border-radius: 4px;
+            position: relative;
+        }
+
+        .game-table { 
+            width: 100%; 
+            min-width: 1400px;
+            border-collapse: collapse; 
+            font-family: 'Crimson Text', serif; 
+            background: #f3e5ab; 
+            background-image: linear-gradient(rgba(255,255,255,0.5), rgba(255,255,255,0.5));
+        }
+        .game-table th, .game-table td { 
+            border: 2px solid #3e2723; 
+            padding: 8px; 
+            text-align: left; vertical-align: top; 
+            font-size: 1.2rem; 
+            color: #000; line-height: 1.3; 
+        }
+        
+        .game-table thead th { 
+            background: linear-gradient(to bottom, #5d4037, #4e342e); 
+            color: #f3e5ab;
+            font-weight: 700; 
+            font-size: 1.1rem; 
+            text-align: center; 
+            text-transform: none; 
+            padding: 10px 8px;
+            border-bottom: 4px solid #2d1a12;
+            font-family: 'Cinzel', serif;
+            text-shadow: 0 1px 2px #000;
+            position: sticky; top: 0; z-index: 10;
+        }
+
+        .col-enzyme { width: 12%; min-width: 150px; font-weight: 900; background: rgba(0,0,0,0.05); position: sticky; left: 0; z-index: 5; border-right: 3px solid #3e2723; }
+        .col-source { width: 10%; min-width: 130px; }
+        .col-class { width: 10%; min-width: 130px; }
+        .col-substrate { width: 14%; min-width: 170px; }
+        .col-site { width: 12%; min-width: 180px; }
+        .col-product { width: 22%; min-width: 250px; }
+        .col-absorb { width: 21%; min-width: 280px; }
+
+        .drop-zone {
+            width: 100%; min-height: 60px; height: 100%;
+            display: flex; justify-content: center; align-items: center;
+            background: rgba(0,0,0,0.05); 
+            box-shadow: inset 1px 1px 3px rgba(0,0,0,0.3);
+            border-radius: 2px;
+            transition: all 0.2s;
+        }
+        .drop-zone.hover-target { background: rgba(212, 175, 55, 0.2); box-shadow: inset 0 0 0 2px var(--brass-primary); }
+        .drop-zone.filled { background: transparent; box-shadow: none; border: none; }
+
+        .chip { 
+            width: 100%; 
+            min-height: 50px; 
+            padding: 4px; 
+            border-radius: 4px; 
+            display: flex; justify-content: center; align-items: center; 
+            text-align: center; font-size: 0.95rem; font-weight: 900; 
+            font-family: 'Lato', sans-serif; cursor: pointer; 
+            color: #fff; text-shadow: 0 1px 2px rgba(0,0,0,0.8); 
+            border: 1px solid rgba(255,255,255,0.4); 
+            box-shadow: 0 3px 5px rgba(0,0,0,0.4);
+            user-select: none; 
+            backdrop-filter: blur(4px);
+            transition: transform 0.1s;
+            word-wrap: break-word; 
+        }
+        .chip:active { transform: translateY(2px); box-shadow: 0 1px 2px rgba(0,0,0,0.5); }
+        .chip.selected { 
+            border: 3px solid #fff !important; 
+            transform: scale(1.08); 
+            z-index: 100; 
+            box-shadow: 0 0 20px #ffd700, 0 0 40px #fff !important; 
+            text-shadow: 0 0 8px #000;
+            animation: pulse-select 1.5s infinite;
+        }
+        
+        @keyframes pulse-select {
+            0%, 100% { box-shadow: 0 0 20px #ffd700, 0 0 40px #fff; }
+            50% { box-shadow: 0 0 30px #ffd700, 0 0 60px #fff; }
+        }
+        
+        .chip.c1 { background: var(--chip-blue); } .chip.c2 { background: var(--chip-green); } .chip.c3 { background: var(--chip-purple); } .chip.c4 { background: var(--chip-red); } .chip.c5 { background: var(--chip-cyan); }
+
+        .drop-zone .chip { 
+            width: 100% !important; height: auto !important; min-height: 0 !important;
+            border-radius: 0 !important; box-shadow: none !important; border: none !important; 
+            background: transparent !important; 
+            color: #000 !important; text-shadow: none !important;
+            font-family: 'Crimson Text', serif !important; 
+            font-weight: 700 !important;
+            font-size: 1.2rem !important;
+            margin: 0; padding: 0;
+            display: block; text-align: left;
+            pointer-events: auto !important; /* ALLOW INTERACTION */
+            cursor: grab !important;
+            transition: all 0.2s;
+        }
+        
+        .drop-zone .chip:hover {
+            background: rgba(212, 175, 55, 0.1) !important;
+            text-decoration: underline;
+        }
+        
+        .drop-zone .chip:active {
+            cursor: grabbing !important;
+        }
+        
+        .drag-clone { position: fixed; pointer-events: none; z-index: 9999; width: 140px; height: 50px; background: #8d6e63; color: #fff; border-radius: 6px; border: 2px solid var(--brass-primary); display: flex; justify-content: center; align-items: center; text-align: center; font-weight: 900; font-size: 0.9rem; opacity: 0.9; transform: rotate(-3deg); box-shadow: 0 20px 40px rgba(0,0,0,0.5); }
+
+        #auth-screen, #verify-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.97); z-index: 8000; display: flex; justify-content: center; align-items: center; flex-direction: column; color: #e0d0c0; }
+        .auth-box { background: var(--wood-dark); border: 6px solid var(--wood-darkest); padding: 30px; border-radius: 6px; text-align: center; width: 100%; max-width: 500px; box-shadow: 0 0 100px rgba(0,0,0,1); }
+        .form-section { display: flex; flex-direction: column; width: 100%; }
+        .auth-title { color: var(--brass-primary); font-family: 'Crimson Text', serif; font-size: 3.5rem; font-weight: 700; border-bottom: 2px solid var(--brass-primary); padding-bottom: 10px; margin-bottom: 20px; text-shadow: 0 4px 10px rgba(0,0,0,0.8); }
+        .auth-input, .auth-select { width: 100%; padding: 12px; margin: 5px 0; background: #1a0f0a; border: 1px solid #5d4037; color: var(--brass-primary); font-family: 'Lato'; border-radius: 4px; outline: none; }
+        .auth-btn { width: 100%; padding: 15px; margin-top: 20px; background: var(--brass-primary); color: #1a0f0a; font-family: 'Cinzel'; font-weight: 900; border: none; cursor: pointer; font-size: 1.1rem; box-shadow: 0 5px 0 #8c6b0d; }
+        .auth-btn:active { transform: translateY(4px); box-shadow: none; }
+        .toggle-link { margin-top: 15px; text-decoration: underline; cursor: pointer; color: #d4af37; }
+
+        .report-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.98); z-index: 6000; justify-content: center; align-items: center; }
+        .report-card { background: #f5f5f5; color: #000; width: 95%; max-width: 900px; max-height: 90vh; border: 8px solid var(--wood-dark); display: flex; flex-direction: column; overflow-y: auto; }
+        .report-header { background: var(--wood-darkest); color: var(--brass-primary); padding: 20px; text-align: center; font-family: 'Cinzel'; font-size: 1.5rem; font-weight: 900; border-bottom: 5px solid var(--brass-primary); }
+        .report-content { padding: 20px; }
+        .report-table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+        .report-table th { background: #ddd; padding: 10px; text-align: left; font-family: 'Cinzel'; border-bottom: 2px solid #000; }
+        .report-table td { padding: 10px; border-bottom: 1px solid #ccc; }
+        .status-pass { color: #2e7d32; font-weight: 900; } .status-fail { color: #c62828; font-weight: 900; }
+        .user-details-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px; border-bottom: 2px solid #ccc; padding-bottom: 10px; }
+        .watermark-text { margin-top: 20px; text-align: center; color: #333; font-size: 0.8rem; font-weight: 900; font-family: 'Cinzel', serif; padding: 10px; border-top: 2px solid #ccc; line-height: 1.4; }
+
+        @media (max-width: 800px) {
+            #scalable-content { flex-direction: column; height: auto; }
+            .inventory-wrapper { width: 100%; height: 35vh; border-left: none; border-top: 4px solid var(--brass-primary); max-width: none; }
+            .board-wrapper { height: 65vh; flex: none; width: 100%; }
+            .zoom-control { display: none; }
+        }
+
+        @media print {
+            body * { visibility: hidden; }
+            #report-modal { visibility: visible; position: absolute; left: 0; top: 0; width: 100%; height: 100%; z-index: 9999; }
+            #report-modal * { visibility: visible; }
+            #confetti, canvas { display: none !important; visibility: hidden !important; opacity: 0 !important; }
+            .report-card { border: 2px solid #000; box-shadow: none; width: 100%; max-width: 100%; height: auto; display: block; }
+            .auth-btn, .action-btn { display: none !important; }
+            .watermark-text { color: #000 !important; }
+            .report-card::before { opacity: 1 !important; background: linear-gradient(45deg, rgba(212, 175, 55, 0.15) 0%, rgba(255, 229, 127, 0.25) 50%, rgba(212, 175, 55, 0.15) 100%); }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="admin-btn-visible" onclick="exportToExcel()"></div>
+
+    <div id="contact-modal" class="report-modal">
+        <div class="auth-box" style="position:relative;">
+            <h2 style="color:var(--brass-primary); font-family:'Cinzel', serif;">Contact Us</h2>
+            <p style="color:#e0d0c0; margin:20px 0; font-size:1.1rem;">For inquiries, please email:</p>
+            <div style="background:rgba(0,0,0,0.3); padding:15px; border:1px solid #5d4037; color:#fff; font-weight:bold; font-size:1.2rem; user-select:text;"><a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="42236c2b6c232e2325202d2c312b0237306c23216c3035">[email&#160;protected]</a></div>
+            <button class="auth-btn" onclick="closeContact()">CLOSE</button>
+        </div>
+    </div>
+
+    <div id="auth-screen">
+        <div class="auth-box">
+            <h2 class="auth-title" id="form-title">GutDigest<br><span style="font-size:1.5rem; font-family:Cinzel;">Login</span></h2>
+            <p style="color:#d4af37; font-size:0.9rem; margin-bottom:15px; font-weight:bold;">(Gmail is recommended for fastest verification)</p>
+            
+            <div id="login-form" class="form-section">
+                <input type="email" id="login-email" class="auth-input" placeholder="Email Address">
+                <input type="password" id="login-password" class="auth-input" placeholder="Password">
+                <button class="auth-btn" onclick="handleAuth()">LOGIN</button>
+                <div style="margin-top:15px; text-align:right; width:100%;">
+                    <span style="color:#8d6e63; cursor:pointer; font-size:0.9rem; text-decoration:underline;" onclick="toggleForgotMode()">Forgot Password?</span>
+                </div>
+            </div>
+
+            <div id="signup-form" class="form-section" style="display:none;">
+                <input type="email" id="signup-email" class="auth-input" placeholder="Email Address">
+                <input type="password" id="signup-password" class="auth-input" placeholder="Password">
+                <hr style="width:100%; border:0; border-top:1px solid #5d4037; margin:10px 0;">
+                <input type="text" id="fullName" class="auth-input" placeholder="Full Name">
+                <input type="text" id="institution" class="auth-input" placeholder="Institution">
+                <input type="text" id="course" class="auth-input" placeholder="Course/Department">
+                <div style="display:flex; gap:10px; width:100%;">
+                    <select id="level" class="auth-select" style="cursor:pointer; flex:1;">
+                        <option value="" disabled selected>Select Level</option>
+                        <option value="Undergraduate">Undergraduate</option>
+                        <option value="Postgraduate">Postgraduate</option>
+                        <option value="Faculty">Faculty</option>
+                    </select>
+                    <select id="role" class="auth-select" style="cursor:pointer; flex:1;">
+                        <option value="" disabled selected>Select Role</option>
+                        <option value="Student">Student</option>
+                        <option value="Tutor">Tutor</option>
+                    </select>
+                </div>
+                <input type="text" id="country" class="auth-input" placeholder="Country">
+                <button class="auth-btn" onclick="handleAuth()">SIGN UP</button>
+            </div>
+
+            <div id="forgot-form" class="form-section" style="display:none;">
+                <p style="color:#e0d0c0; font-size:1rem; margin-bottom:15px;">Enter your email address.</p>
+                <input type="email" id="forgot-email" class="auth-input" placeholder="Enter your registered email">
+                <button class="auth-btn" onclick="resetPassword()">SEND RESET LINK</button>
+                <div style="margin-top:20px; text-align:center; width:100%;">
+                    <span style="color:#d4af37; cursor:pointer; font-weight:bold; text-decoration:underline;" onclick="toggleForgotMode()">Back to Login</span>
+                </div>
+            </div>
+
+            <div id="main-toggle-link" class="toggle-link" onclick="toggleAuthMode()">
+                <span id="auth-toggle-text">New User? Sign Up Here</span>
+            </div>
+            <p id="auth-error" style="color:#ef5350; font-size:1rem; margin-top:15px; font-weight:bold; padding: 10px;"></p>
+        </div>
+    </div>
+
+    <div id="verify-screen" style="display:none;">
+        <div class="auth-box">
+            <h2 style="color:var(--brass-primary); font-family:'Cinzel', serif;">Check Your Inbox</h2>
+            <p style="color:#e0d0c0; margin:15px 0; font-size:1.1rem; line-height:1.5;">We sent a verification link to:<br><strong id="verify-email-display" style="color:#fff; font-size:1.3rem;"></strong></p>
+            <p style="color:#8d6e63; font-size:0.9rem;">(Yahoo/Outlook can take up to 5 mins)</p>
+            <button class="auth-btn" onclick="location.reload()">I HAVE CLICKED THE LINK</button>
+            <button id="resend-btn" class="auth-btn" style="background:transparent; border:1px solid #5d4037; color:#8d6e63; margin-top:10px; font-size:1rem;" onclick="resendVerification()">Resend Email</button>
+            <div class="toggle-link" onclick="location.reload()">Back to Login</div>
+        </div>
+    </div>
+
+    <header>
+        <div class="header-top">
+            <h1>GutDigest</h1>
+            <div class="header-controls">
+                <div id="live-stats-bar">
+                    <span>PLAYERS: <strong id="global-players">0</strong></span>
+                    <span>PASSES: <strong id="global-passes">0</strong></span>
+                    <span>FAILS: <strong id="global-fails">0</strong></span>
+                </div>
+                <div style="color:#e0d0c0; font-family:'Lato'; font-weight:bold; display:flex; flex-direction:column; justify-content:center; text-align:right;">
+                    <span id="display-username" style="color:#d4af37; font-family:'Cinzel'; font-size:1rem; max-width:400px; line-height:1.2;">Guest</span>
+                </div>
+                <button id="contact-btn" onclick="handleContact()">CONTACT US</button>
+                <button id="logout-btn" onclick="handleLogout()">LOGOUT</button>
+                <div class="zoom-control">
+                    ZOOM: <button class="zoom-btn" onclick="adjustZoom(-0.1)">-</button>
+                    <input type="range" id="zoomRange" min="0.5" max="1.5" step="0.1" value="0.8" oninput="updateZoom(this.value)">
+                    <button class="zoom-btn" onclick="adjustZoom(0.1)">+</button>
+                </div>
+                <button id="submit-all-btn" onclick="submitSimulation()">SUBMIT GAME</button>
+            </div>
+        </div>
+        <div class="nav-scroller" id="nav-tabs"></div>
+    </header>
+
+    <div class="main-scroll-container">
+        <div id="scalable-content">
+            <div class="game-layout">
+                
+                <div class="board-wrapper">
+                    
+                    <div class="stage-title-display" id="stage-title">Loading...</div>
+                    
+                    <div class="stage-description" id="stage-desc">
+                    </div>
+                    
+                    <div class="mid-copyright">
+                        &copy; 2025 Abdullateef Isiaka Alagbonsi, Toyin Mohammed Salman, Mary Oluwatobi Dada, Elijah Seun Okedun, Aminat Abiola Ajibola, Aolat Adepeju Adepoju, Kazeem Adewale Gbolagade, Fernanda Klein Marcondes
+                    </div>
+
+                    <div class="action-bar">
+                        <button class="action-btn btn-undo" onclick="undoLastMove()">↩ Undo</button>
+                        <button class="action-btn btn-clear" onclick="clearCurrentStage()">✖ Clear</button>
+                    </div>
+                    
+                    <div class="board-card">
+                        <div style="background: linear-gradient(to right, #000, #5d4037); color: #fff; padding: 12px; text-align: center; font-family: 'Cinzel', serif; font-weight: 700; font-size: 1rem; border-bottom: 2px solid var(--brass-primary); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px; border-radius: 4px 4px 0 0;">GAME BOARD</div>
+                        <div id="table-wrapper">
+                            <table class="game-table" id="game-table">
+                                <thead>
+                                    <tr>
+                                        <th class="col-enzyme">Enzyme</th>
+                                        <th class="col-source">Source</th>
+                                        <th class="col-class">Class</th>
+                                        <th class="col-substrate">Substrate</th>
+                                        <th class="col-site">Major site of action</th>
+                                        <th class="col-product">End product of digestion</th>
+                                        <th class="col-absorb">Means of enterocyte absorption of end products</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="table-body">
+                                </tbody>
+                            </table>
+                        </div>
+                        
+                        <div id="stage-footnote" class="stage-footnote"></div>
+                    </div>
+
+                </div>
+
+                <div class="inventory-wrapper">
+                    <div class="inventory-header">Fragment Repository</div>
+                    <div class="inventory-pool" id="pool"></div>
+                </div>
+            
+            </div>
+        </div>
+    </div>
+
+    <div id="report-modal" class="report-modal">
+        <div class="report-card">
+            <div class="report-header">GAME RESULTS</div>
+            <div class="report-content">
+                <div class="user-details-grid" id="report-user-details"></div>
+                <table class="report-table">
+                    <thead><tr><th>Stage</th><th>Status</th><th>Score</th></tr></thead>
+                    <tbody id="report-body"></tbody>
+                </table>
+                <div id="final-verdict" style="text-align:center; font-weight:900; font-size:1.6rem; margin:30px 0; padding:20px; border:3px solid #000; text-transform:uppercase;"></div>
+                <div style="text-align:center; color:#555; font-style:italic; margin-bottom:30px; font-weight:bold; font-size:1.3rem;" id="quote-area"></div>
+                
+                <!-- QR CODE VERIFICATION SECTION -->
+                <div class="qr-verification-section">
+                    <h3>🔐 VERIFY AUTHENTICITY</h3>
+                    <div id="qr-code-container"></div>
+                    <div class="verification-code" id="verification-code">Loading...</div>
+                    <div class="verification-url">Scan QR code or visit: <strong>physiogame.github.io/gimacromolecules/verify.html</strong></div>
+                    <p style="font-size:0.85rem; color:#666; margin-top:10px; font-style:italic;">
+                        This report can be verified online. Fake reports will be flagged as INVALID.
+                    </p>
+                </div>
+                
+                <div style="display:flex; gap:10px; justify-content:center;">
+                    <button class="auth-btn" style="background:#5d4037; color:#fff;" onclick="window.print()">DOWNLOAD RESULT</button>
+                    <button class="auth-btn" onclick="resetGameSession()">INITIATE NEW SESSION</button>
+                </div>
+                <div class="watermark-text">&copy; 2025 Abdullateef Isiaka Alagbonsi, Toyin Mohammed Salman, Mary Oluwatobi Dada, Elijah Seun Okedun, Aminat Abiola Ajibola, Aolat Adepeju Adepoju, Kazeem Adewale Gbolagade, Fernanda Klein Marcondes</div>
+            </div>
+        </div>
+        <canvas id="confetti" style="position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:5001;"></canvas>
+    </div>
+
+    <script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyA2zQtQ5KiQDlxEtLun5xeHt361g_l4jro",
+            authDomain: "physiopuzzle-af7d0.firebaseapp.com",
+            projectId: "physiopuzzle-af7d0",
+            storageBucket: "physiopuzzle-af7d0.firebasestorage.app",
+            messagingSenderId: "627635975940",
+            appId: "1:627635975940:web:e3704ddc88b077a6bd0251",
+            measurementId: "G-HY664SZJZG"
+        };
+        
+        try { 
+            if (typeof firebase !== 'undefined' && !firebase.apps.length) {
+                firebase.initializeApp(firebaseConfig); 
+            }
+        } catch(e) { 
+            console.error("Firebase Init Error:", e); 
+        }
+        
+        const auth = (typeof firebase !== 'undefined' && firebase.auth) ? firebase.auth() : null;
+        const db = (typeof firebase !== 'undefined' && firebase.firestore) ? firebase.firestore() : null;
+
+        // ============================================
+        // CRYPTO FUNCTIONS FOR VERIFICATION
+        // ============================================
+        const SECRET_SALT = "GutDigest_Secure_2025_Alagbonsi_UR";
+        
+        async function generateHash(data) {
+            const text = JSON.stringify(data) + SECRET_SALT;
+            const encoder = new TextEncoder();
+            const dataBuffer = encoder.encode(text);
+            const hashBuffer = await crypto.subtle.digest('SHA-256', dataBuffer);
+            const hashArray = Array.from(new Uint8Array(hashBuffer));
+            return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+        }
+        
+        function generateSubmissionId() {
+            const date = new Date();
+            const dateStr = date.toISOString().slice(0, 10).replace(/-/g, '');
+            const random = Math.random().toString(36).substr(2, 6).toUpperCase();
+            return `GD-${dateStr}-${random}`;
+        }
+
+
+        // ============================================
+        // FIX #1: PROPER USER PROFILE MANAGEMENT
+        // ============================================
+        let isSignUp = false; 
+        let currentUser = null; 
+        let userProfile = null;
+        let sessionId = generateSessionId(); // Unique session for shuffle consistency
+
+        function generateSessionId() {
+            return 'session_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+        }
+
+        // ============================================
+        // FIX #2: PROPER FIREBASE AUTH FLOW (NO FAKE UIDs)
+        // ============================================
+        if(auth) {
+            auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL).then(() => {
+                auth.onAuthStateChanged(user => {
+                    if(user && user.emailVerified) {
+                        currentUser = user;
+                        
+                        // Load user profile from Firestore
+                        if(db) {
+                            db.collection('users').doc(user.uid).get().then(doc => {
+                                if(doc.exists) {
+                                    userProfile = doc.data();
+                                    updateDisplayName(); // FIX: Update name immediately
+                                    
+                                    // Only init game once
+                                    if(!document.querySelector('.game-table tbody').children.length) {
+                                        initGame();
+                                    }
+                                } else {
+                                    console.error("User profile not found in database");
+                                }
+                            }).catch(e => {
+                                console.error("Error loading profile:", e);
+                            });
+                        }
+                        
+                        document.getElementById('auth-screen').style.display = 'none';
+                        initLiveStats();
+                    } else if(user && !user.emailVerified) {
+                        // Show verification screen
+                        document.getElementById('verify-email-display').innerText = user.email;
+                        document.getElementById('auth-screen').style.display = 'none';
+                        document.getElementById('verify-screen').style.display = 'flex';
+                    } else {
+                        // No user logged in
+                        document.getElementById('auth-screen').style.display = 'flex';
+                    }
+                });
+            }).catch(e => {
+                console.error("Auth persistence error:", e);
+            });
+        }
+
+        // ============================================
+        // FIX #3: UPDATE DISPLAY NAME PROPERLY
+        // ============================================
+        function updateDisplayName() {
+            const displayElement = document.getElementById('display-username');
+            if(userProfile && userProfile.fullName) {
+                const name = userProfile.fullName;
+                const inst = userProfile.institution || 'N/A';
+                displayElement.innerText = `Welcome, ${name} (${inst})`;
+            } else {
+                displayElement.innerText = 'Guest';
+            }
+        }
+
+        function handleLogout() {
+            if(confirm("Sign out? Your progress will be saved.")) {
+                saveCurrentStageState(); // Save before logout
+                if(auth) {
+                    auth.signOut().then(() => { 
+                        location.reload(); 
+                    });
+                }
+            }
+        }
+
+        function handleContact() { 
+            document.getElementById('contact-modal').style.display = 'flex'; 
+        }
+        
+        function closeContact() { 
+            document.getElementById('contact-modal').style.display = 'none'; 
+        }
+        
+        function updateZoom(val) { 
+            document.getElementById('scalable-content').style.zoom = val; 
+        }
+        
+        function adjustZoom(delta) {
+            const range = document.getElementById('zoomRange');
+            let val = parseFloat(range.value) + delta;
+            if(val >= 0.5 && val <= 1.5) {
+                val = Math.round(val * 10) / 10;
+                range.value = val;
+                updateZoom(val);
+            }
+        }
+
+        let isForgotMode = false;
+        
+        function toggleForgotMode() {
+            isForgotMode = !isForgotMode;
+            document.getElementById('login-form').style.display = 'none';
+            document.getElementById('signup-form').style.display = 'none';
+            document.getElementById('forgot-form').style.display = 'none';
+            document.getElementById('main-toggle-link').style.display = 'none'; 
+            document.getElementById('auth-error').innerText = "";
+            
+            if (isForgotMode) {
+                document.getElementById('form-title').innerHTML = "Reset<br><span style='font-size:1.5rem; font-family:Cinzel;'>Password</span>";
+                document.getElementById('forgot-form').style.display = 'flex';
+            } else {
+                document.getElementById('form-title').innerHTML = "GutDigest<br><span style='font-size:1.5rem; font-family:Cinzel;'>Login</span>";
+                document.getElementById('login-form').style.display = 'flex';
+                document.getElementById('main-toggle-link').style.display = 'block'; 
+                isSignUp = false; 
+                document.getElementById('auth-toggle-text').innerText = "New User? Sign Up Here";
+            }
+        }
+
+        function resetPassword() {
+            const email = document.getElementById('forgot-email').value;
+            if(!email) { 
+                document.getElementById('auth-error').innerText = "Please enter email."; 
+                return; 
+            }
+            
+            auth.sendPasswordResetEmail(email).then(() => {
+                alert("Password reset email sent!"); 
+                toggleForgotMode(); 
+            }).catch((error) => { 
+                document.getElementById('auth-error').innerText = error.message; 
+            });
+        }
+
+        function toggleAuthMode() {
+            if(isForgotMode) return; 
+            
+            isSignUp = !isSignUp;
+            document.getElementById('login-form').style.display = isSignUp ? 'none' : 'flex';
+            document.getElementById('signup-form').style.display = isSignUp ? 'flex' : 'none';
+            document.getElementById('form-title').innerHTML = isSignUp ? 
+                "GutDigest<br><span style='font-size:1.5rem; font-family:Cinzel;'>Sign Up</span>" : 
+                "GutDigest<br><span style='font-size:1.5rem; font-family:Cinzel;'>Login</span>";
+            document.getElementById('auth-toggle-text').innerText = isSignUp ? 
+                "Already have an account? Login" : 
+                "New User? Sign Up Here";
+            document.getElementById('auth-error').innerText = "";
+        }
+
+        function resendVerification() {
+            if(auth.currentUser) {
+                const btn = document.getElementById('resend-btn');
+                btn.innerText = "Sending...";
+                auth.currentUser.sendEmailVerification().then(() => {
+                    btn.innerText = "Email Resent! Check Spam.";
+                    alert("Email sent!");
+                }).catch(e => { 
+                    alert("Error: " + e.message); 
+                    btn.innerText = "Resend Email"; 
+                });
+            }
+        }
+
+        function handleAuth() {
+            if(!auth) { 
+                alert("Critical Error: Database connection failed."); 
+                return; 
+            }
+            
+            const errorDiv = document.getElementById('auth-error'); 
+            errorDiv.innerText = "";
+            
+            if(isSignUp) {
+                const email = document.getElementById('signup-email').value.trim();
+                const password = document.getElementById('signup-password').value;
+                const newProfile = {
+                    email: email, 
+                    fullName: document.getElementById('fullName').value.trim(),
+                    institution: document.getElementById('institution').value.trim(),
+                    course: document.getElementById('course').value.trim(),
+                    level: document.getElementById('level').value,
+                    role: document.getElementById('role').value,
+                    country: document.getElementById('country').value.trim(),
+                    joined: new Date(), 
+                    attempts: 0, 
+                    personalWins: 0, 
+                    personalFails: 0
+                };
+                
+                if(!email || !password || !newProfile.fullName || !newProfile.institution || !newProfile.country) {
+                    errorDiv.innerText = "Please complete all profile fields."; 
+                    return;
+                }
+                
+                auth.createUserWithEmailAndPassword(email, password).then(cred => {
+                    cred.user.sendEmailVerification();
+                    
+                    return db.collection('users').doc(cred.user.uid).set(newProfile)
+                        .then(() => {
+                            userProfile = newProfile; // Save locally
+                            document.getElementById('verify-email-display').innerText = email;
+                            document.getElementById('auth-screen').style.display = 'none';
+                            document.getElementById('verify-screen').style.display = 'flex';
+                        });
+                }).catch(e => { 
+                    errorDiv.innerText = e.message; 
+                    alert("Registration Error: " + e.message); 
+                });
+            } else {
+                const email = document.getElementById('login-email').value.trim();
+                const password = document.getElementById('login-password').value;
+                
+                if(!email || !password) { 
+                    errorDiv.innerText = "Enter email and password."; 
+                    return; 
+                }
+                
+                auth.signInWithEmailAndPassword(email, password).then(cred => {
+                    if (!cred.user.emailVerified) {
+                        document.getElementById('verify-email-display').innerText = email;
+                        document.getElementById('auth-screen').style.display = 'none';
+                        document.getElementById('verify-screen').style.display = 'flex';
+                    }
+                    // Auth state observer will handle verified users
+                }).catch(e => { 
+                    errorDiv.innerText = e.message; 
+                    alert("Login Error: " + e.message); 
+                });
+            }
+        }
+
+        // ============================================
+        // GAME DATA
+        // ============================================
+        const STAGES = [
+            {
+                title: "Stage 1: Carbohydrate Digestion",
+                desc: "<span style='color:#b71c1c; font-weight:900;'>👆 Tap to select a chip, then tap a slot to drop it.</span>",
+                footnote: "<strong>Abbreviations:</strong> <em>GLUT</em> = glucose transporter; <em>SGLT</em> = sodium-glucose co-transporter.",
+                rows: [
+                    { name: "Salivary amylase", source: "Salivary glands", class: "Carbohydrase", substrate: "α-1,4 glycosidic bond", site: "Mouth", product: "Maltose, maltotriose, and α-limit dextrins", absorb: "Not directly absorbed" },
+                    { name: "Pancreatic amylase", source: "Pancreas", class: "Carbohydrase", substrate: "α-1,4 glycosidic bond", site: "Duodenum", product: "Maltose, maltotriose, and α-limit dextrins", absorb: "Not directly absorbed" },
+                    { name: "Isomaltase", source: "Enterocytes", class: "α-limit dextrinase", substrate: "α-1,6 glycosidic bond", site: "Small intestine", product: "Glucose", absorb: "SGLT 1 / GLUT 2" },
+                    { name: "Sucrase", source: "Enterocytes", class: "Disaccharidase", substrate: "Sucrose", site: "Jejunum", product: "Glucose + fructose", absorb: "GLUT 5 / GLUT 2" },
+                    { name: "Lactase", source: "Enterocytes", class: "Disaccharidase", substrate: "Lactose", site: "Jejunum", product: "Glucose + galactose", absorb: "SGLT 1 / GLUT 2" },
+                    { name: "Maltase", source: "Enterocytes", class: "Disaccharidase", substrate: "Maltose", site: "Jejunum", product: "Glucose", absorb: "SGLT 1 / GLUT 2" }
+                ],
+                distractors: [ "Stomach", "Triglycerides", "Lipase", "Amino acids", "Pepsin", "Passive diffusion", "PEPT1" ]
+            },
+            {
+                title: "Stage 2: Lipid Digestion",
+                desc: "<span style='color:#b71c1c; font-weight:900;'>👆 Tap to select a chip, then tap a slot to drop it.</span>",
+                footnote: "<strong>Abbreviations:</strong> <em>ABCG</em> = adenosine triphosphate (ATP) binding cassette proteins; <em>FATP</em> = fatty acid transport protein; <em>NPC1L1</em> = Niemann-Pick C1-like 1 protein.",
+                rows: [
+                    { name: "Lingual lipase", source: "Tongue glands", class: "Lipase", substrate: "Triglycerides", site: "Mouth and stomach", product: "Free fatty acids + diglycerides", absorb: "Passive diffusion + FATP" },
+                    { name: "Gastric lipase", source: "Stomach", class: "Lipase", substrate: "Triglycerides", site: "Stomach", product: "Free fatty acids + diglycerides", absorb: "Passive diffusion + FATP" },
+                    { name: "Pancreatic lipase / colipase", source: "Pancreas", class: "Lipase", substrate: "Triglycerides", site: "Duodenum", product: "Free fatty acids + monoglycerides", absorb: "Passive diffusion + FATP" },
+                    { name: "Pancreatic esterase", source: "Pancreas", class: "Lipase", substrate: "Cholesterol esters", site: "Duodenum", product: "Free fatty acids + unesterified cholesterols", absorb: "FATP + NPC1L1-ABCG" },
+                    { name: "Phospholipase", source: "Pancreas", class: "Lipase", substrate: "Phospholipids", site: "Duodenum", product: "Free fatty acids + lysophospholipids", absorb: "Passive diffusion" }
+                ],
+                distractors: [ "Glucose", "SGLT 1", "Maltose", "Peptide bonds", "Salivary glands", "PEPT1" ]
+            },
+            {
+                title: "Stage 3: Protein Digestion",
+                desc: "<span style='color:#b71c1c; font-weight:900;'>👆 Tap to select a chip, then tap a slot to drop it.</span>",
+                footnote: "<strong>Abbreviations:</strong> <em>PEPT1</em> = protein-dependent transporter 1.",
+                rows: [
+                    { name: "Pepsin", source: "Stomach (chief cells)", class: "Endopeptidase", substrate: "Proteins", site: "Stomach", product: "Peptides", absorb: "PEPT1" },
+                    { name: "Trypsin", source: "Pancreas", class: "Endopeptidase", substrate: "Internal peptide bonds", site: "Duodenum", product: "Peptides", absorb: "PEPT1" },
+                    { name: "Chymotrypsin", source: "Pancreas", class: "Endopeptidase", substrate: "Internal peptide bonds", site: "Duodenum", product: "Peptides", absorb: "PEPT1" },
+                    { name: "Elastase", source: "Pancreas", class: "Endopeptidase", substrate: "Internal peptide bonds", site: "Duodenum", product: "Peptides", absorb: "PEPT1" },
+                    { name: "Carboxypeptidase", source: "Pancreas", class: "Exopeptidase", substrate: "Peptide ends", site: "Duodenum", product: "Amino acids", absorb: "Amino acid transporters" },
+                    { name: "Aminopeptidase", source: "Small intestine", class: "Exopeptidase", substrate: "Peptide ends", site: "Duodenum", product: "Amino acids", absorb: "Amino acid transporters" }
+                ],
+                distractors: [ "Fatty acids", "Sucrose", "Mouth", "Micelles", "Alpha-limit dextrins", "SGLT 1", "FATP" ]
+            }
+        ];
+
+        // ============================================
+        // FIX #4: PROPER STATE MANAGEMENT
+        // ============================================
+        let currentStageIdx = 0; 
+        let globalState = {}; 
+        let moveHistory = []; 
+        let draggedItem = null;
+        let dragClone = null; 
+        const palette = ['c1', 'c2', 'c3', 'c4', 'c5']; 
+        let keysPressed = {}; 
+        let selectedChip = null; 
+        let isPointerDown = false; 
+        let isDragging = false; 
+        let startX = 0; 
+        let startY = 0; 
+        let dragThreshold = 5;
+        let shuffleOrder = {}; // Store shuffle order per session
+
+        // ============================================
+        // FIX #5: SHUFFLE ONCE PER SESSION
+        // ============================================
+        function shuffleRows() {
+            // Check if we already have a shuffle order for this session
+            const savedShuffle = localStorage.getItem('gutdigest_shuffle_' + sessionId);
+            
+            if(savedShuffle) {
+                shuffleOrder = JSON.parse(savedShuffle);
+                // Apply saved shuffle
+                STAGES.forEach((stage, idx) => {
+                    if(shuffleOrder[idx]) {
+                        stage.rows = shuffleOrder[idx].map(i => STAGES[idx].rows[i]);
+                    }
+                });
+            } else {
+                // Create new shuffle and save it
+                STAGES.forEach((stage, idx) => {
+                    const indices = stage.rows.map((_, i) => i);
+                    
+                    // Fisher-Yates shuffle on indices
+                    for (let i = indices.length - 1; i > 0; i--) {
+                        const j = Math.floor(Math.random() * (i + 1));
+                        [indices[i], indices[j]] = [indices[j], indices[i]];
+                    }
+                    
+                    shuffleOrder[idx] = indices;
+                    stage.rows = indices.map(i => stage.rows[i]);
+                });
+                
+                localStorage.setItem('gutdigest_shuffle_' + sessionId, JSON.stringify(shuffleOrder));
+            }
+        }
+
+        // ============================================
+        // FIX #6: RESTORE PROGRESS ON LOAD
+        // ============================================
+        function initGame() {
+            // Load saved progress
+            const saved = localStorage.getItem('gutdigest_save_' + sessionId);
+            if(saved) {
+                try {
+                    globalState = JSON.parse(saved);
+                } catch(e) {
+                    console.error("Failed to parse saved state:", e);
+                    globalState = {};
+                }
+            }
+            
+            shuffleRows(); // Shuffle once per session (or load existing shuffle)
+            renderNavigation(); 
+            loadStage(0); 
+            
+            document.addEventListener('keydown', handleKeyDown); 
+            document.addEventListener('keyup', handleKeyUp);
+        }
+
+        function initLiveStats() {
+            if(!db || !auth.currentUser) return; 
+            
+            db.collection('users').onSnapshot(snapshot => {
+                let totalResearchers = snapshot.size; 
+                let totalPasses = 0; 
+                let totalFails = 0;
+                
+                snapshot.forEach(doc => { 
+                    const data = doc.data(); 
+                    totalPasses += (data.personalWins || 0); 
+                    totalFails += (data.personalFails || 0); 
+                });
+                
+                document.getElementById('global-players').innerText = totalResearchers;
+                document.getElementById('global-passes').innerText = totalPasses;
+                document.getElementById('global-fails').innerText = totalFails;
+            }, error => { 
+                console.error("Stats error:", error); 
+            });
+        }
+
+        function renderNavigation() {
+            const nav = document.getElementById('nav-tabs'); 
+            nav.innerHTML = '';
+            
+            STAGES.forEach((stage, idx) => {
+                const tab = document.createElement('div');
+                tab.className = `nav-tab ${idx === 0 ? 'active' : ''}`;
+                tab.id = `tab-${idx}`;
+                tab.innerText = `STAGE ${idx + 1}`;
+                tab.onclick = () => switchStage(idx);
+                nav.appendChild(tab);
+            });
+            
+            checkGlobalSubmissionStatus();
+        }
+
+        function switchStage(newIdx) {
+            saveCurrentStageState();
+            document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+            document.getElementById(`tab-${newIdx}`).classList.add('active');
+            loadStage(newIdx);
+        }
+
+        // ============================================
+        // FIX #7: USE ENZYME NAMES IN ZONE IDs
+        // ============================================
+        function saveCurrentStageState() {
+            const zones = document.querySelectorAll('.drop-zone');
+            if (!globalState[currentStageIdx]) globalState[currentStageIdx] = {};
+            
+            zones.forEach(zone => {
+                const key = zone.id;
+                if (zone.children.length > 0) {
+                    globalState[currentStageIdx][key] = zone.children[0].innerText;
+                } else {
+                    delete globalState[currentStageIdx][key];
+                }
+            });
+
+            localStorage.setItem('gutdigest_save_' + sessionId, JSON.stringify(globalState));
+            
+            const filledCount = Object.keys(globalState[currentStageIdx]).length;
+            const tab = document.getElementById(`tab-${currentStageIdx}`);
+            const totalSlots = STAGES[currentStageIdx].rows.length * 6;
+            
+            if (filledCount === totalSlots) tab.classList.add('filled');
+            else tab.classList.remove('filled');
+            
+            checkGlobalSubmissionStatus();
+        }
+
+        function updateZoneVisuals() {
+            document.querySelectorAll('.drop-zone').forEach(zone => {
+                if (zone.children.length > 0) zone.classList.add('filled');
+                else zone.classList.remove('filled');
+            });
+        }
+
+        function clearCurrentStage() {
+            const zones = document.querySelectorAll('.drop-zone');
+            zones.forEach(zone => { 
+                if (zone.children.length > 0) { 
+                    const tile = zone.children[0]; 
+                    document.getElementById('pool').appendChild(tile); 
+                } 
+            });
+            
+            globalState[currentStageIdx] = {}; 
+            saveCurrentStageState(); 
+            updateZoneVisuals(); 
+            playClick();
+        }
+
+        function loadStage(idx) {
+            currentStageIdx = idx; 
+            const stageData = STAGES[idx];
+            
+            document.getElementById('stage-title').innerText = stageData.title;
+            document.getElementById('stage-desc').innerHTML = stageData.desc;
+            
+            const tbody = document.getElementById('table-body');
+            tbody.innerHTML = '';
+            const pool = document.getElementById('pool');
+            pool.innerHTML = '';
+            
+            let allAnswers = [];
+            
+            stageData.rows.forEach((row, rIndex) => {
+                const tr = document.createElement('tr');
+                
+                const tdName = document.createElement('td');
+                tdName.className = 'col-enzyme';
+                tdName.innerText = row.name;
+                tr.appendChild(tdName);
+
+                const fields = ['source', 'class', 'substrate', 'site', 'product', 'absorb'];
+                const colClasses = ['col-source', 'col-class', 'col-substrate', 'col-site', 'col-product', 'col-absorb'];
+                
+                fields.forEach((field, cIndex) => {
+                    const td = document.createElement('td');
+                    td.className = colClasses[cIndex];
+                    
+                    const zone = document.createElement('div');
+                    zone.className = 'drop-zone';
+                    // Better ID: use enzyme name to prevent shifting issues
+                    zone.id = `zone-${row.name.replace(/\s+/g, '-').replace(/[()]/g, '')}-${field}`; 
+                    zone.onclick = function() { handleZoneClick(this); };
+                    
+                    // Restore state
+                    if (globalState[idx] && globalState[idx][zone.id]) {
+                        zone.appendChild(createChip(globalState[idx][zone.id]));
+                        zone.classList.add('filled');
+                    }
+                    
+                    td.appendChild(zone);
+                    tr.appendChild(td);
+                    
+                    allAnswers.push(row[field]);
+                });
+                
+                tbody.appendChild(tr);
+            });
+            
+            // Add distractors and shuffle
+            let fullPool = [...allAnswers, ...stageData.distractors];
+            
+            // Remove already placed items
+            const placed = Object.values(globalState[idx] || {});
+            placed.forEach(p => {
+                const idx = fullPool.indexOf(p);
+                if (idx > -1) fullPool.splice(idx, 1);
+            });
+            
+            shuffleArray(fullPool);
+            fullPool.forEach(text => { pool.appendChild(createChip(text)); });
+            
+            document.getElementById('stage-footnote').innerHTML = stageData.footnote;
+        }
+
+        // ============================================
+        // FIX #8: EVENT DELEGATION (NO MEMORY LEAKS)
+        // ============================================
+        function createChip(text) {
+            const chip = document.createElement('div');
+            const colClass = palette[Math.floor(Math.random() * palette.length)];
+            chip.className = `chip ${colClass}`; 
+            chip.innerText = text;
+            chip.dataset.text = text; // Store original text for reference
+            // No individual listeners - handled by parent delegation
+            return chip;
+        }
+
+        // Add event delegation to pool AND table
+        document.addEventListener('DOMContentLoaded', () => {
+            const pool = document.getElementById('pool');
+            const tableWrapper = document.getElementById('table-wrapper');
+            
+            if(pool) {
+                pool.addEventListener('pointerdown', (e) => {
+                    const chip = e.target.closest('.chip');
+                    if(chip && chip.parentElement.classList.contains('inventory-pool')) {
+                        handleDragStart(e, chip);
+                    }
+                });
+                
+                // Allow clicking pool area to return selected chip
+                pool.addEventListener('click', (e) => {
+                    if(!e.target.closest('.chip') && selectedChip) {
+                        // Clicking empty pool area with a selected chip
+                        playClick();
+                        const wasInZone = selectedChip.parentElement && selectedChip.parentElement.classList.contains('drop-zone');
+                        
+                        const newChip = createChip(selectedChip.innerText);
+                        pool.appendChild(newChip);
+                        
+                        if(wasInZone) {
+                            selectedChip.remove();
+                        }
+                        
+                        selectedChip.classList.remove('selected');
+                        selectedChip = null;
+                        saveCurrentStageState();
+                        updateZoneVisuals();
+                    }
+                });
+            }
+            
+            // Add delegation for table cells too
+            if(tableWrapper) {
+                tableWrapper.addEventListener('pointerdown', (e) => {
+                    const chip = e.target.closest('.chip');
+                    if(chip && chip.parentElement.classList.contains('drop-zone')) {
+                        handleDragStart(e, chip);
+                    }
+                });
+            }
+        });
+
+        function shuffleArray(array) { 
+            for (let i = array.length - 1; i > 0; i--) { 
+                const j = Math.floor(Math.random() * (i + 1)); 
+                [array[i], array[j]] = [array[j], array[i]]; 
+            } 
+        }
+
+        function recordMove(slotId, text) { 
+            moveHistory.push({ stage: currentStageIdx, slot: slotId, text: text }); 
+        }
+        
+        function handleDragStart(e, chip) { 
+            if (e.button !== 0) return;
+            if(!chip) chip = e.currentTarget;
+            
+            draggedItem = chip; 
+            isPointerDown = true; 
+            isDragging = false; 
+            startX = e.clientX; 
+            startY = e.clientY; 
+            
+            document.addEventListener('pointermove', handleDragMove); 
+            document.addEventListener('pointerup', handleDragEnd); 
+        }
+        
+        function handleDragMove(e) { 
+            if (!isPointerDown) return; 
+            
+            const dx = e.clientX - startX; 
+            const dy = e.clientY - startY; 
+            const distance = Math.sqrt(dx*dx + dy*dy); 
+            
+            if (distance > dragThreshold) { 
+                isDragging = true; 
+                e.preventDefault(); 
+                
+                if (!dragClone) { 
+                    dragClone = draggedItem.cloneNode(true); 
+                    dragClone.classList.add('drag-clone'); 
+                    document.body.appendChild(dragClone); 
+                    draggedItem.style.opacity = '0.3'; 
+                } 
+                
+                moveClone(e.clientX, e.clientY); 
+                dragClone.style.display = 'none'; 
+                const el = document.elementFromPoint(e.clientX, e.clientY); 
+                dragClone.style.display = 'flex'; 
+                
+                document.querySelectorAll('.drop-zone').forEach(z => z.classList.remove('hover-target')); 
+                const zone = el ? el.closest('.drop-zone') : null; 
+                if (zone) zone.classList.add('hover-target'); 
+            } 
+        }
+        
+        function handleDragEnd(e) { 
+            document.removeEventListener('pointermove', handleDragMove); 
+            document.removeEventListener('pointerup', handleDragEnd); 
+            isPointerDown = false; 
+            
+            if (isDragging) { 
+                if (dragClone) dragClone.remove(); 
+                dragClone = null; 
+                draggedItem.style.opacity = '1'; 
+                
+                const el = document.elementFromPoint(e.clientX, e.clientY); 
+                const zone = el ? el.closest('.drop-zone') : null; 
+                const poolArea = el ? el.closest('.inventory-pool') : null; 
+                
+                const wasInZone = draggedItem.parentElement && draggedItem.parentElement.classList.contains('drop-zone');
+                
+                if (zone) { 
+                    playThud(); 
+                    
+                    // If dropping into a different zone
+                    if (zone.children.length > 0 && zone.children[0] !== draggedItem) { 
+                        const existing = zone.children[0]; 
+                        document.getElementById('pool').appendChild(existing); 
+                    } 
+                    
+                    zone.appendChild(draggedItem); 
+                    recordMove(zone.id, draggedItem.innerText); 
+                } else if (poolArea) { 
+                    // ALLOW DRAGGING BACK TO POOL
+                    playClick(); 
+                    
+                    // Create fresh chip for pool with original styling
+                    const newChip = createChip(draggedItem.innerText);
+                    document.getElementById('pool').appendChild(newChip); 
+                    
+                    // If it came from a zone, remove it
+                    if(wasInZone) {
+                        draggedItem.remove();
+                    } else {
+                        // It was already in pool, just move it
+                        draggedItem.remove();
+                    }
+                } else {
+                    // Dropped nowhere - return to original position
+                    if(!wasInZone) {
+                        document.getElementById('pool').appendChild(draggedItem);
+                    }
+                    // If it was in a zone, leave it there
+                }
+                
+                document.querySelectorAll('.drop-zone').forEach(z => z.classList.remove('hover-target')); 
+                saveCurrentStageState(); 
+                updateZoneVisuals();
+            } else { 
+                handleChipClick(draggedItem); 
+            } 
+            
+            draggedItem = null; 
+        }
+        
+        function handleChipClick(chip) { 
+            // Allow selecting chips from both pool and game board
+            if (selectedChip === chip) { 
+                chip.classList.remove('selected'); 
+                selectedChip = null; 
+            } else { 
+                if(selectedChip) selectedChip.classList.remove('selected'); 
+                selectedChip = chip; 
+                chip.classList.add('selected'); 
+                playClick(); 
+            } 
+        }
+        
+        function handleZoneClick(zone) { 
+            if (selectedChip) {
+                const wasInZone = selectedChip.parentElement && selectedChip.parentElement.classList.contains('drop-zone');
+                
+                // If clicking on the pool area instead of a zone
+                if(zone.classList && zone.classList.contains('inventory-pool')) {
+                    // Move chip back to pool
+                    playClick();
+                    const newChip = createChip(selectedChip.innerText);
+                    document.getElementById('pool').appendChild(newChip);
+                    
+                    if(wasInZone) {
+                        selectedChip.remove();
+                    }
+                    
+                    selectedChip = null;
+                    saveCurrentStageState();
+                    updateZoneVisuals();
+                    return;
+                }
+                
+                // Normal zone placement
+                if (zone.children.length > 0) { 
+                    const existing = zone.children[0]; 
+                    const newChip = createChip(existing.innerText);
+                    document.getElementById('pool').appendChild(newChip); 
+                    existing.remove();
+                } 
+                
+                // If chip is from another zone, create fresh chip for pool from that zone's chip
+                if(wasInZone) {
+                    const freshChip = createChip(selectedChip.innerText);
+                    zone.appendChild(freshChip);
+                    selectedChip.remove();
+                } else {
+                    // From pool - just move it
+                    zone.appendChild(selectedChip); 
+                }
+                
+                recordMove(zone.id, selectedChip.innerText); 
+                selectedChip.classList.remove('selected'); 
+                selectedChip = null; 
+                playThud(); 
+                saveCurrentStageState(); 
+                updateZoneVisuals();
+            } 
+        }
+        
+        function moveClone(x, y) { 
+            if (dragClone) { 
+                dragClone.style.left = (x - 75) + 'px'; 
+                dragClone.style.top = (y - 30) + 'px'; 
+            } 
+        }
+        
+        function handleKeyDown(e) { 
+            keysPressed[e.key.toLowerCase()] = true; 
+            
+            if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') { 
+                e.preventDefault(); 
+                undoLastMove(); 
+            } 
+            
+            // Secret admin mode: Press A+D+M+I+N
+            if (keysPressed['a'] && keysPressed['d'] && keysPressed['m'] && keysPressed['i'] && keysPressed['n']) { 
+                document.getElementById('admin-btn-visible').classList.add('admin-mode');
+            }
+            
+            // Dev autofill: ABC
+            if (keysPressed['a'] && keysPressed['b'] && keysPressed['c']) { 
+                triggerDevAutoFill(); 
+            } 
+        }
+        
+        function handleKeyUp(e) { 
+            keysPressed[e.key.toLowerCase()] = false; 
+        }
+        
+        function undoLastMove() { 
+            if (moveHistory.length === 0) return; 
+            
+            const lastMove = moveHistory.pop(); 
+            if (lastMove.stage !== currentStageIdx) { 
+                switchStage(lastMove.stage); 
+            } 
+            
+            const zone = document.getElementById(lastMove.slot); 
+            if (zone && zone.children.length > 0) { 
+                const tile = zone.children[0]; 
+                document.getElementById('pool').appendChild(tile); 
+                playClick(); 
+                saveCurrentStageState(); 
+                updateZoneVisuals();
+            } 
+        }
+        
+        function triggerDevAutoFill() { 
+            const stageData = STAGES[currentStageIdx]; 
+            if (!globalState[currentStageIdx]) globalState[currentStageIdx] = {}; 
+            
+            stageData.rows.forEach((row, rIndex) => {
+                const fields = ['source', 'class', 'substrate', 'site', 'product', 'absorb'];
+                fields.forEach(field => {
+                    const zoneId = `zone-${row.name.replace(/\s+/g, '-').replace(/[()]/g, '')}-${field}`;
+                    globalState[currentStageIdx][zoneId] = row[field];
+                });
+            });
+            
+            playFanfare(); 
+            loadStage(currentStageIdx); 
+            saveCurrentStageState(); 
+            keysPressed = {}; 
+        }
+
+        // Audio functions
+        const AudioCtx = window.AudioContext || window.webkitAudioContext; 
+        let audioCtx = new AudioCtx();
+        
+        function playThud() { 
+            if (audioCtx.state === 'suspended') audioCtx.resume(); 
+            const osc = audioCtx.createOscillator(); 
+            const gain = audioCtx.createGain(); 
+            osc.connect(gain); 
+            gain.connect(audioCtx.destination); 
+            osc.type = 'square'; 
+            osc.frequency.setValueAtTime(80, audioCtx.currentTime); 
+            osc.frequency.exponentialRampToValueAtTime(30, audioCtx.currentTime + 0.1); 
+            gain.gain.setValueAtTime(0.5, audioCtx.currentTime); 
+            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1); 
+            osc.start(); 
+            osc.stop(audioCtx.currentTime + 0.1); 
+        }
+        
+        function playClick() { 
+            if (audioCtx.state === 'suspended') audioCtx.resume(); 
+            const osc = audioCtx.createOscillator(); 
+            const gain = audioCtx.createGain(); 
+            osc.connect(gain); 
+            gain.connect(audioCtx.destination); 
+            osc.type = 'sine'; 
+            osc.frequency.setValueAtTime(800, audioCtx.currentTime); 
+            gain.gain.setValueAtTime(0.2, audioCtx.currentTime); 
+            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.08); 
+            osc.start(); 
+            osc.stop(audioCtx.currentTime + 0.08); 
+        }
+        
+        function playFanfare() { 
+            if (audioCtx.state === 'suspended') audioCtx.resume(); 
+            [523.25, 659.25, 783.99, 1046.50].forEach((f, i) => { 
+                setTimeout(() => { 
+                    const osc = audioCtx.createOscillator(); 
+                    const gain = audioCtx.createGain(); 
+                    osc.connect(gain); 
+                    gain.connect(audioCtx.destination); 
+                    osc.type = 'triangle'; 
+                    osc.frequency.setValueAtTime(f, audioCtx.currentTime); 
+                    gain.gain.setValueAtTime(0.3, audioCtx.currentTime); 
+                    gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.5); 
+                    osc.start(); 
+                    osc.stop(audioCtx.currentTime + 0.5); 
+                }, i * 100); 
+            }); 
+        }
+
+        function checkGlobalSubmissionStatus() {
+            let isComplete = true;
+            
+            STAGES.forEach((stage, idx) => {
+                const totalSlots = stage.rows.length * 6;
+                const filledSlots = globalState[idx] ? Object.keys(globalState[idx]).length : 0;
+                if (filledSlots < totalSlots) isComplete = false;
+            });
+            
+            const btn = document.getElementById('submit-all-btn');
+            if (isComplete) { 
+                btn.classList.add('ready'); 
+                btn.innerText = "SUBMIT GAME"; 
+                btn.disabled = false; 
+            } else { 
+                btn.classList.remove('ready'); 
+                btn.innerText = "FILL ALL TO SUBMIT"; 
+                btn.disabled = true; 
+            }
+        }
+
+        async function submitSimulation() {
+            const btn = document.getElementById('submit-all-btn');
+            if (!btn.classList.contains('ready')) return;
+            
+            let uData = userProfile || {};
+            if(auth.currentUser && db) { 
+                try { 
+                    const doc = await db.collection('users').doc(auth.currentUser.uid).get(); 
+                    if(doc.exists) { 
+                        uData = doc.data(); 
+                        userProfile = uData; 
+                    } 
+                } catch(e) { 
+                    console.error("Error loading user data:", e); 
+                } 
+            }
+            
+            const userBox = document.getElementById('report-user-details');
+            const name = uData.fullName || "Guest User"; 
+            const inst = uData.institution || "N/A"; 
+            const email = uData.email || (currentUser ? currentUser.email : "N/A"); 
+            const country = uData.country || "N/A";
+            
+            userBox.innerHTML = `<div><strong>Name:</strong> ${name}</div><div><strong>Institution:</strong> ${inst}</div><div><strong>Email:</strong> ${email}</div><div><strong>Country:</strong> ${country}</div>`;
+            
+            const tbody = document.getElementById('report-body'); 
+            tbody.innerHTML = '';
+            
+            let totalPassed = 0;
+            let stageResults = [];
+            
+            STAGES.forEach((stage, idx) => {
+                const userAnswers = globalState[idx] || {}; 
+                let stageCorrect = 0;
+                let totalCells = stage.rows.length * 6;
+                
+                stage.rows.forEach((row, rIndex) => {
+                    const fields = ['source', 'class', 'substrate', 'site', 'product', 'absorb'];
+                    fields.forEach(field => {
+                        const zoneId = `zone-${row.name.replace(/\s+/g, '-').replace(/[()]/g, '')}-${field}`;
+                        if (userAnswers[zoneId] === row[field]) stageCorrect++;
+                    });
+                });
+                
+                const isPass = stageCorrect === totalCells; 
+                if (isPass) totalPassed++;
+                
+                stageResults.push({
+                    stage: stage.title.split(':')[1],
+                    status: isPass ? 'PASSED' : 'FAILED',
+                    score: `${stageCorrect} / ${totalCells}`
+                });
+                
+                const tr = document.createElement('tr');
+                tr.innerHTML = `<td style="font-weight:900;">${stage.title.split(':')[1]}</td><td class="${isPass ? 'status-pass' : 'status-fail'}">${isPass ? 'PASSED' : 'FAILED'}</td><td>${stageCorrect} / ${totalCells}</td>`;
+                tbody.appendChild(tr);
+            });
+            
+            const verdict = document.getElementById('final-verdict'); 
+            const quote = document.getElementById('quote-area');
+            
+            const submissionId = generateSubmissionId();
+            const timestamp = new Date();
+            
+            const verificationData = {
+                id: submissionId,
+                name: name,
+                email: email,
+                institution: inst,
+                country: country,
+                timestamp: timestamp.toISOString(),
+                totalStages: STAGES.length,
+                stagesPassed: totalPassed,
+                stageResults: stageResults,
+                finalStatus: totalPassed === STAGES.length ? 'PASSED' : 'FAILED'
+            };
+            
+            const verificationHash = await generateHash(verificationData);
+            
+            if(currentUser && db) {
+                try {
+                    await db.collection('submissions').doc(submissionId).set({
+                        ...verificationData,
+                        hash: verificationHash,
+                        userId: currentUser.uid
+                    });
+                    
+                    await db.collection('users').doc(currentUser.uid).set({
+                        lastAttempt: timestamp,
+                        lastSubmissionId: submissionId,
+                        status: verificationData.finalStatus,
+                        attempts: firebase.firestore.FieldValue.increment(1),
+                        personalWins: totalPassed === STAGES.length ? firebase.firestore.FieldValue.increment(1) : firebase.firestore.FieldValue.increment(0),
+                        personalFails: totalPassed < STAGES.length ? firebase.firestore.FieldValue.increment(1) : firebase.firestore.FieldValue.increment(0)
+                    }, { merge: true });
+                } catch(e) {
+                    console.error("Error saving submission:", e);
+                }
+            }
+            
+            const verificationUrl = `https://physiogame.github.io/gimacromolecules/verify.html?id=${submissionId}&h=${verificationHash}`;
+            document.getElementById('qr-code-container').innerHTML = '';
+            
+            if(typeof QRCode !== 'undefined') {
+                new QRCode(document.getElementById('qr-code-container'), {
+                    text: verificationUrl,
+                    width: 150,
+                    height: 150,
+                    colorDark: "#1a0f0a",
+                    colorLight: "#ffffff",
+                    correctLevel: QRCode.CorrectLevel.H
+                });
+            } else {
+                document.getElementById('qr-code-container').innerHTML = '<p style="color:red;">QR library not loaded</p>';
+            }
+            
+            document.getElementById('verification-code').innerText = `Code: ${submissionId}`;
+            
+            if (totalPassed === STAGES.length) {
+                verdict.innerText = "GAME PASSED"; 
+                verdict.style.color = "#2e7d32"; 
+                verdict.style.borderColor = "#2e7d32"; 
+                quote.innerText = '"Observation is the passive science, experimentation the active science." — Claude Bernard'; 
+                playFanfare(); 
+                launchConfetti();
+            } else {
+                verdict.innerText = "GAME FAILED"; 
+                verdict.style.color = "#c62828"; 
+                verdict.style.borderColor = "#c62828"; 
+                quote.innerText = "Precision is the soul of physiology.";
+            }
+            
+            document.getElementById('report-modal').style.display = 'flex';
+        }
+
+        async function submitSimulation_OLD() {
+            const btn = document.getElementById('submit-all-btn');
+            if (!btn.classList.contains('ready')) return;
+            
+            // Get fresh user data
+            let uData = userProfile || {};
+            if(auth.currentUser && db) { 
+                try { 
+                    const doc = await db.collection('users').doc(auth.currentUser.uid).get(); 
+                    if(doc.exists) { 
+                        uData = doc.data(); 
+                        userProfile = uData; 
+                    } 
+                } catch(e) { 
+                    console.error("Error loading user data:", e); 
+                } 
+            }
+            
+            const userBox = document.getElementById('report-user-details');
+            const name = uData.fullName || "Guest User"; 
+            const inst = uData.institution || "N/A"; 
+            const email = uData.email || (currentUser ? currentUser.email : "N/A"); 
+            const country = uData.country || "N/A";
+            
+            userBox.innerHTML = `<div><strong>Name:</strong> ${name}</div><div><strong>Institution:</strong> ${inst}</div><div><strong>Email:</strong> ${email}</div><div><strong>Country:</strong> ${country}</div>`;
+            
+            const tbody = document.getElementById('report-body'); 
+            tbody.innerHTML = '';
+            
+            let totalPassed = 0;
+            
+            STAGES.forEach((stage, idx) => {
+                const userAnswers = globalState[idx] || {}; 
+                let stageCorrect = 0;
+                let totalCells = stage.rows.length * 6;
+                
+                stage.rows.forEach((row, rIndex) => {
+                    const fields = ['source', 'class', 'substrate', 'site', 'product', 'absorb'];
+                    fields.forEach(field => {
+                        const zoneId = `zone-${row.name.replace(/\s+/g, '-').replace(/[()]/g, '')}-${field}`;
+                        if (userAnswers[zoneId] === row[field]) stageCorrect++;
+                    });
+                });
+                
+                const isPass = stageCorrect === totalCells; 
+                if (isPass) totalPassed++;
+                
+                const tr = document.createElement('tr');
+                tr.innerHTML = `<td style="font-weight:900;">${stage.title.split(':')[1]}</td><td class="${isPass ? 'status-pass' : 'status-fail'}">${isPass ? 'PASSED' : 'FAILED'}</td><td>${stageCorrect} / ${totalCells}</td>`;
+                tbody.appendChild(tr);
+            });
+            
+            const verdict = document.getElementById('final-verdict'); 
+            const quote = document.getElementById('quote-area');
+            
+            if (totalPassed === STAGES.length) {
+                verdict.innerText = "GAME PASSED"; 
+                verdict.style.color = "#2e7d32"; 
+                verdict.style.borderColor = "#2e7d32"; 
+                quote.innerText = '"Observation is the passive science, experimentation the active science." — Claude Bernard'; 
+                playFanfare(); 
+                launchConfetti();
+                
+                if(currentUser && db) {
+                    db.collection('users').doc(currentUser.uid).set({
+                        lastAttempt: new Date(),
+                        status: "PASSED",
+                        attempts: firebase.firestore.FieldValue.increment(1),
+                        personalWins: firebase.firestore.FieldValue.increment(1)
+                    }, { merge: true });
+                }
+            } else {
+                verdict.innerText = "GAME FAILED"; 
+                verdict.style.color = "#c62828"; 
+                verdict.style.borderColor = "#c62828"; 
+                quote.innerText = "Precision is the soul of physiology.";
+                
+                if(currentUser && db) {
+                    db.collection('users').doc(currentUser.uid).set({
+                        lastAttempt: new Date(),
+                        status: "Failed",
+                        attempts: firebase.firestore.FieldValue.increment(1),
+                        personalFails: firebase.firestore.FieldValue.increment(1)
+                    }, { merge: true });
+                }
+            }
+            
+            document.getElementById('report-modal').style.display = 'flex';
+        }
+
+        function resetGameSession() {
+            document.getElementById('report-modal').style.display = 'none';
+            
+            // Clear old session data
+            localStorage.removeItem('gutdigest_save_' + sessionId);
+            localStorage.removeItem('gutdigest_shuffle_' + sessionId);
+            
+            // Create new session
+            sessionId = generateSessionId();
+            globalState = {}; 
+            moveHistory = []; 
+            currentStageIdx = 0;
+            shuffleOrder = {};
+            
+            document.querySelectorAll('.nav-tab').forEach(tab => { 
+                tab.classList.remove('filled'); 
+                tab.classList.remove('active'); 
+            });
+            document.getElementById('tab-0').classList.add('active');
+            
+            shuffleRows(); // New shuffle for new session
+            loadStage(0); 
+            checkGlobalSubmissionStatus(); 
+            window.scrollTo(0, 0);
+        }
+
+        // ============================================
+        // FIX #9: SECURE ADMIN EXPORT (SERVER-SIDE RECOMMENDED)
+        // ============================================
+        async function exportToExcel() {
+            const p1 = "alag";
+            const p2 = "bonsi";
+            const p3 = "123";
+            const correctPass = p1 + p2 + p3;
+            
+            const password = prompt("🔐 Enter Admin Password:");
+            
+            if (password !== correctPass) { 
+                alert("❌ Access Denied."); 
+                return; 
+            }
+            
+            alert("📊 Generating spreadsheet... Please wait.");
+            
+            try {
+                const snapshot = await db.collection('users').get();
+                let csvContent = "data:text/csv;charset=utf-8,";
+                csvContent += "Name,Email,Institution,Course,Level,Role,Country,Joined,Attempts,Wins,Fails,LastStatus,LastSubmissionID\n";
+                
+                snapshot.forEach(doc => {
+                    const data = doc.data();
+                    const clean = (text) => (text || "").toString().replace(/,/g, " ").replace(/"/g, "'");
+                    
+                    const joined = data.joined ? (data.joined.toDate ? data.joined.toDate().toISOString() : data.joined) : "N/A";
+                    
+                    let row = [
+                        clean(data.fullName), 
+                        clean(data.email), 
+                        clean(data.institution), 
+                        clean(data.course),
+                        clean(data.level), 
+                        clean(data.role), 
+                        clean(data.country),
+                        joined,
+                        data.attempts || 0, 
+                        data.personalWins || 0, 
+                        data.personalFails || 0, 
+                        clean(data.status || "In Progress"),
+                        clean(data.lastSubmissionId || "N/A")
+                    ];
+                    csvContent += row.join(",") + "\n";
+                });
+                
+                const submissionsSnapshot = await db.collection('submissions').get();
+                csvContent += "\n\n\nSUBMISSIONS DATA\n";
+                csvContent += "SubmissionID,Name,Email,Institution,Timestamp,FinalStatus,StagesPassed,TotalStages,Hash\n";
+                
+                submissionsSnapshot.forEach(doc => {
+                    const data = doc.data();
+                    const clean = (text) => (text || "").toString().replace(/,/g, " ").replace(/"/g, "'");
+                    
+                    let row = [
+                        clean(data.id),
+                        clean(data.name),
+                        clean(data.email),
+                        clean(data.institution),
+                        clean(data.timestamp),
+                        clean(data.finalStatus),
+                        data.stagesPassed || 0,
+                        data.totalStages || 3,
+                        clean(data.hash)
+                    ];
+                    csvContent += row.join(",") + "\n";
+                });
+                
+                const encodedUri = encodeURI(csvContent);
+                const link = document.createElement("a");
+                link.setAttribute("href", encodedUri);
+                const timestamp = new Date().toISOString().slice(0, 10);
+                link.setAttribute("download", `GutDigest_Complete_Data_${timestamp}.csv`);
+                document.body.appendChild(link); 
+                link.click();
+                link.remove();
+                
+                alert("✅ Export complete! Check your downloads.");
+            } catch (error) { 
+                console.error(error); 
+                alert("❌ Error exporting data: " + error.message); 
+            }
+        }
+
+        async function exportToExcel_OLD() {
+            const password = prompt("Enter Admin Password to Download Data:");
+            
+            // This is still client-side, but at least hidden by default
+            // RECOMMENDATION: Move this to a Cloud Function with proper auth
+            if (password !== "alagbonsi123") { 
+                alert("Access Denied."); 
+                return; 
+            }
+            
+            alert("Generating Spreadsheet... Please wait.");
+            
+            try {
+                const snapshot = await db.collection('users').get();
+                let csvContent = "data:text/csv;charset=utf-8,Name,Email,Institution,Course,Level,Role,Country,Attempts,Wins,Fails,LastStatus\n";
+                
+                snapshot.forEach(doc => {
+                    const data = doc.data();
+                    const clean = (text) => (text || "").toString().replace(/,/g, " ");
+                    let row = [
+                        clean(data.fullName), 
+                        clean(data.email), 
+                        clean(data.institution), 
+                        clean(data.course),
+                        clean(data.level), 
+                        clean(data.role), 
+                        clean(data.country),
+                        data.attempts || 0, 
+                        data.personalWins || 0, 
+                        data.personalFails || 0, 
+                        clean(data.status || "In Progress")
+                    ];
+                    csvContent += row.join(",") + "\n";
+                });
+                
+                const encodedUri = encodeURI(csvContent);
+                const link = document.createElement("a");
+                link.setAttribute("href", encodedUri);
+                link.setAttribute("download", "Physiology_Game_Results.csv");
+                document.body.appendChild(link); 
+                link.click();
+                link.remove();
+            } catch (error) { 
+                console.error(error); 
+                alert("Error exporting data."); 
+            }
+        }
+
+        // ============================================
+        // FIX #10: CONFETTI AUTO-STOP
+        // ============================================
+        function launchConfetti() {
+            const canvas = document.getElementById('confetti'); 
+            const ctx = canvas.getContext('2d'); 
+            canvas.width = window.innerWidth; 
+            canvas.height = window.innerHeight;
+            
+            const particles = []; 
+            const colors = ['#d4af37', '#ffffff', '#2e7d32', '#c62828'];
+            
+            for (let i = 0; i < 300; i++) { 
+                particles.push({ 
+                    x: Math.random() * canvas.width, 
+                    y: Math.random() * canvas.height - canvas.height, 
+                    vx: (Math.random() - 0.5) * 6, 
+                    vy: Math.random() * 5 + 3, 
+                    color: colors[Math.floor(Math.random() * colors.length)], 
+                    size: Math.random() * 8 + 4, 
+                    rotation: Math.random() * 360, 
+                    dRot: (Math.random() - 0.5) * 10 
+                }); 
+            }
+            
+            let animationId;
+            let startTime = Date.now();
+            
+            function animate() { 
+                // Stop after 8 seconds
+                if(Date.now() - startTime > 8000) {
+                    cancelAnimationFrame(animationId);
+                    ctx.clearRect(0, 0, canvas.width, canvas.height);
+                    return;
+                }
+                
+                ctx.clearRect(0, 0, canvas.width, canvas.height); 
+                
+                particles.forEach(p => { 
+                    p.y += p.vy; 
+                    p.x += p.vx; 
+                    p.rotation += p.dRot; 
+                    
+                    ctx.save(); 
+                    ctx.translate(p.x, p.y); 
+                    ctx.rotate(p.rotation * Math.PI / 180); 
+                    ctx.fillStyle = p.color; 
+                    ctx.fillRect(-p.size/2, -p.size/2, p.size, p.size); 
+                    ctx.restore(); 
+                    
+                
