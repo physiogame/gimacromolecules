@@ -1,0 +1,2883 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=0.2, maximum-scale=5.0">
+    <meta name="description" content="Advanced Physiology Gamification: GutDigest">
+    <meta name="author" content="Abdullateef Isiaka Alagbonsi, Toyin Mohammed Salman, Mary Oluwatobi Dada, Elijah Seun Okedun, Aminat Abiola Ajibola, Aolat Adepeju Adepoju, Kazeem Adewale Gbolagade, Fernanda Klein Marcondes">
+    <title>GutDigest</title>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&family=Lato:wght@300;400;700;900&family=Crimson+Text:ital,wght@0,400;0,600;0,700;1,700&display=swap" rel="stylesheet">
+    
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+    <!-- QR Code Library - ADDED -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+
+    <style>
+        /* [ALL YOUR CSS REMAINS EXACTLY THE SAME - NO CHANGES] */
+        :root {
+            --wood-darkest: #1a0f0a; --wood-dark: #3e2723; --wood-medium: #5d4037; --wood-light: #8d6e63;
+            --brass-primary: #d4af37; --brass-highlight: #ffe57f; --brass-shadow: #8c6b0d;
+            --paper-texture: #f5f5f5; --felt-green: #1b3c24; 
+            
+            --tbl-pink: #fccaff;
+            --tbl-yellow: #ffff00;
+            --tbl-blue: #ccffff;
+            --tbl-border: #3e2723;
+
+            --velvet-blue: #0a1024;
+            
+            --chip-blue: linear-gradient(135deg, #3949ab, #1a237e); 
+            --chip-green: linear-gradient(135deg, #2e7d32, #1b5e20);
+            --chip-purple: linear-gradient(135deg, #8e24aa, #4a148c); 
+            --chip-red: linear-gradient(135deg, #c62828, #b71c1c);
+            --chip-cyan: linear-gradient(135deg, #00838f, #006064);
+        }
+
+        * { box-sizing: border-box; touch-action: manipulation; }
+        html { font-size: 16px; height: 100%; }
+
+        ::-webkit-scrollbar {
+            width: 6px; 
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(26, 15, 10, 0.3); 
+            border-radius: 3px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: linear-gradient(180deg, #d4af37, #8c6b0d);
+            border-radius: 3px;
+            border: 1px solid rgba(0,0,0,0.2);
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: linear-gradient(180deg, #ffe57f, #d4af37); 
+        }
+        ::-webkit-scrollbar-corner {
+            background: transparent;
+        }
+
+        * {
+            scrollbar-width: thin;
+            scrollbar-color: #d4af37 rgba(26, 15, 10, 0.3);
+        }
+
+        body { 
+            font-family: 'Lato', sans-serif; 
+            background-color: #0f0502; 
+            background-image: radial-gradient(circle at 50% 50%, #2d1a12 0%, #1a0f0a 60%, #050201 100%); 
+            color: #000; 
+            margin: 0; padding: 0; 
+            height: 100vh; width: 100vw; 
+            display: flex; flex-direction: column; 
+            overflow: hidden; 
+        }
+
+        #admin-btn-visible { 
+            position: fixed; top: 0; left: 50%; transform: translateX(-50%); 
+            width: 20px; height: 20px; 
+            background: radial-gradient(circle, #d4af37 0%, #8c6b0d 100%); 
+            border: 1px solid rgba(255,255,255,0.1); 
+            border-top: none; 
+            border-radius: 50%; 
+            box-shadow: 0 2px 8px rgba(212, 175, 55, 0.3); 
+            cursor: pointer; 
+            z-index: 5000; 
+            opacity: 0; 
+            pointer-events: none;
+            transition: all 0.3s ease;
+        }
+        #admin-btn-visible.admin-mode { 
+            opacity: 0.15; 
+            pointer-events: all; 
+        }
+        #admin-btn-visible.admin-mode:hover { 
+            opacity: 0.8; 
+            transform: translateX(-50%) scale(1.2);
+            box-shadow: 0 0 20px rgba(212, 175, 55, 0.8);
+        }
+
+        header { 
+            width: 100%; padding: 6px 16px; 
+            background-color: var(--wood-dark); border-bottom: 4px solid var(--wood-darkest); 
+            box-shadow: 0 5px 20px rgba(0,0,0,0.8); z-index: 1000; 
+            display: flex; flex-direction: column; gap: 4px; flex-shrink: 0; color: #e0d0c0;
+        }
+        .header-top { display: flex; justify-content: space-between; align-items: center; width: 100%; }
+        
+        .header-top { display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:nowrap; }
+
+        h1 { 
+            font-family: 'Crimson Text', serif; 
+            font-size: 1.75rem; 
+            margin: 0; 
+            color: var(--brass-primary); 
+            text-transform: none; 
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.8);
+        }
+
+        .header-controls { display:flex; align-items:center; justify-content:flex-end; flex-wrap:wrap; gap:8px; row-gap:6px; min-width:0; flex:1; }
+        .zoom-control { display: flex; align-items: center; color: var(--brass-primary); font-family: 'Lato', sans-serif; font-weight: bold; font-size: 0.82rem; gap: 5px; background: rgba(0,0,0,0.3); padding: 3px 7px; border-radius: 12px; border: 1px solid #5d4037; flex: 0 0 auto; white-space: nowrap; }
+        input[type=range] { width: 80px; cursor: pointer; accent-color: var(--brass-primary); margin: 0 5px; }
+        .zoom-btn { background: var(--brass-primary); border: none; color: #1a0f0a; width: 20px; height: 20px; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-weight: 900; cursor: pointer; font-size: 1rem; padding-bottom: 2px; }
+        
+        #logout-btn, #contact-btn, #feedback-btn, #history-header-btn { background: transparent; border: 1px solid #d4af37; color: #d4af37; font-family: 'Cinzel', serif; font-weight: bold; padding: 0.45rem 0.85rem; font-size: 0.78rem; cursor: pointer; border-radius: 4px; text-decoration: none; white-space: nowrap; flex: 0 0 auto; min-width: fit-content; line-height: 1.1; }
+        #logout-btn:hover, #contact-btn:hover, #feedback-btn:hover, #history-header-btn:hover { background: #d4af37; color: #1a0f0a; box-shadow: 0 0 10px rgba(212, 175, 55, 0.5); }
+
+        #submit-all-btn { background-color: #1b5e20; color: #81c784; font-family: 'Cinzel', serif; font-weight: 900; font-size: 0.9rem; padding: 0.45rem 1rem; border: 2px solid #0d3310; border-radius: 4px; cursor: not-allowed; opacity: 0.6; text-transform: uppercase; letter-spacing: 1px; box-shadow: 0 4px 0 rgba(0,0,0,0.5); white-space: nowrap; flex: 0 0 auto; }
+        #submit-all-btn.ready { background: linear-gradient(135deg, #d4af37 0%, #ffe57f 50%, #8c6b0d 100%); color: #1a0f0a; border-color: var(--brass-highlight); cursor: pointer; opacity: 1; box-shadow: 0 5px 0 #8c6b0d, 0 0 15px rgba(212, 175, 55, 0.4); animation: pulseGold 2.5s infinite; }
+        #submit-all-btn.ready:active { transform: translateY(5px); box-shadow: 0 0 0 #8c6b0d; }
+        @keyframes pulseGold { 0% { filter: brightness(1); } 50% { filter: brightness(1.2); } 100% { filter: brightness(1); } }
+
+        #live-stats-bar { width: auto; background: rgba(0,0,0,0.5); color: var(--brass-primary); padding: 4px 8px; text-align: center; font-family: 'Cinzel', serif; font-size: 0.72rem; border: 1px solid #5d4037; border-radius: 999px; display: flex; justify-content: center; gap: 12px; white-space: nowrap; flex: 0 0 auto; }
+        #global-passes { color: #4caf50; font-weight: 900; } 
+        #global-fails { color: #f44336; font-weight: 900; }
+
+        .nav-scroller { width: 100%; overflow-x: auto; display: flex; gap: 4px; padding-bottom: 2px; scrollbar-width: none; }
+        .nav-tab { flex: 1; min-width: 8rem; background: #2d1a12; color: #8d6e63; padding: 0.6rem 0.3rem; border: 1px solid #3e2723; border-radius: 6px 6px 0 0; font-family: 'Cinzel', serif; font-size: 0.95rem; font-weight: 700; text-align: center; cursor: pointer; transition: all 0.2s; position: relative; text-shadow: 0 1px 1px rgba(0,0,0,0.5); }
+        .nav-tab.active { background: var(--brass-primary); color: #1a0f0a; border-color: var(--brass-highlight); box-shadow: 0 -2px 10px rgba(212, 175, 55, 0.3); z-index: 10; transform: translateY(-3px); font-size: 1.05rem; }
+        .nav-tab.filled::after { content: '✓'; position: absolute; top: 4px; right: 4px; font-size: 0.8rem; color: #2e7d32; font-weight: 900; }
+
+        .main-scroll-container {
+            flex: 1;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: #1b100d;
+        }
+
+        #scalable-content {
+            width: 100%;
+            height: 100%; 
+            transform-origin: top left;
+            zoom: 1;
+            display: flex;
+            flex-direction: column;
+            box-sizing: border-box;
+            padding: 10px;
+        }
+
+        .game-layout {
+            display: flex;
+            width: 100%;
+            height: 100%; 
+            flex-grow: 1;
+            gap: 12px;
+            overflow: hidden; 
+        }
+
+        .board-wrapper {
+            flex: 4.8; 
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto; 
+            overflow-x: hidden;
+            min-width: 0; 
+            height: 100%;
+        }
+
+        .board-card {
+            background: linear-gradient(145deg, #6a4a40 0%, #4b2f28 52%, #38211d 100%);
+            border: 6px solid #2d1a12;
+            border-radius: 10px;
+            box-shadow: 0 16px 34px rgba(0,0,0,0.75), inset 0 2px 0 rgba(255,255,255,0.08), inset 0 -16px 24px rgba(0,0,0,0.28), 0 0 0 1px var(--brass-shadow);
+            padding: 10px;
+            width: 100%;
+            flex-grow: 1;
+            display: flex; flex-direction: column;
+            position: relative;
+        }
+
+        .inventory-wrapper {
+            flex: 1; 
+            min-width: 320px;
+            max-width: 380px;
+            height: 100%;
+            background: var(--velvet-blue);
+            background-image: radial-gradient(circle at top right, #2636a1 0%, #121212 100%);
+            border: 6px solid var(--brass-shadow);
+            border-radius: 10px;
+            display: flex;
+            flex-direction: column;
+            z-index: 50;
+            box-shadow: -8px 14px 28px rgba(0,0,0,0.5), inset 0 2px 0 rgba(255,255,255,0.08);
+            overflow: hidden;
+        }
+
+        .inventory-header { 
+            background: linear-gradient(to right, #000, #1a237e);
+            color: #fff; padding: 12px; 
+            text-align: center; font-family: 'Cinzel', serif; font-weight: 700; font-size: 1rem; 
+            border-bottom: 2px solid var(--brass-primary); 
+            text-transform: uppercase; letter-spacing: 1px; 
+            flex-shrink: 0;
+        }
+        .inventory-controls {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            padding: 10px;
+            border-bottom: 1px solid rgba(212,175,55,0.35);
+            background: rgba(0,0,0,0.28);
+            color: #f5f5f5;
+            flex-shrink: 0;
+        }
+        .inventory-controls label {
+            font-size: 0.78rem;
+            font-weight: 900;
+            letter-spacing: 0.4px;
+            text-transform: uppercase;
+            color: var(--brass-highlight);
+        }
+        .inventory-controls select,
+        .inventory-controls input[type=color] {
+            width: 100%;
+            padding: 8px;
+            background: #10172d;
+            color: #fff;
+            border: 1px solid rgba(212,175,55,0.45);
+            border-radius: 4px;
+            font-weight: 700;
+        }
+        .inventory-help {
+            font-size: 0.78rem;
+            color: #d7dce8;
+            line-height: 1.35;
+        }
+        
+        .inventory-pool { 
+            flex: 1; 
+            padding: 10px; 
+            overflow: auto; 
+            display: grid; 
+            grid-template-columns: 1fr 1fr; 
+            grid-auto-rows: min-content; 
+            gap: 10px; 
+            align-content: start;
+            padding-bottom: 60px;
+            background-image: url("data:image/svg+xml,%3Csvg width='4' height='4' viewBox='0 0 4 4' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 3h1v1H1V3zm2-2h1v1H3V1z' fill='%23ffffff' fill-opacity='0.05'/%3E%3C/svg%3E");
+        }
+
+        .mid-copyright { width: 100%; background: #0f0502; color: #d4af37; padding: 4px 6px; text-align: center; font-family: 'Lato', sans-serif; font-size: 0.68rem; border: 1px solid #3e2723; border-radius: 4px; margin-bottom: 10px; opacity: 0.9; flex-shrink: 0; }
+        
+        .stage-title-display { 
+            background: var(--wood-dark); color: var(--brass-primary); 
+            font-family: 'Cinzel', serif; font-weight: 900; font-size: 1.05rem; 
+            padding: 5px; text-align: center; 
+            border: 2px solid var(--brass-primary); border-radius: 4px; 
+            margin-bottom: 5px; text-transform: uppercase; flex-shrink: 0;
+        }
+        
+        .stage-description { 
+            color: #3e2723; font-family: 'Lato', sans-serif; font-weight: 700; font-size: 0.92rem; 
+            font-style: italic; text-align: center; padding: 7px 10px; 
+            background: #f3e5ab; 
+            box-shadow: 0 2px 5px rgba(0,0,0,0.4);
+            border-radius: 2px; margin-bottom: 10px; 
+            border: 1px solid #d7ccc8; flex-shrink: 0;
+        }
+
+        .stage-footnote {
+            flex-shrink: 0; 
+            margin-top: auto;
+            padding-top: 10px;
+            border-top: 2px solid #3e2723;
+            font-family: 'Crimson Text', serif;
+            font-size: 1rem;
+            color: #000; 
+            font-weight: 600;
+            line-height: 1.4;
+            background: #fff9c4; 
+            padding: 10px;
+            border-radius: 0 0 4px 4px;
+            box-shadow: inset 0 2px 5px rgba(0,0,0,0.1);
+        }
+        .stage-footnote strong { font-weight: 900; color: #b71c1c; text-decoration: none; text-transform: uppercase; font-size: 0.8rem; }
+
+        .action-bar { display: flex; justify-content: flex-end; gap: 8px; margin-bottom: 4px; flex-shrink: 0; }
+        .action-btn { padding: 5px 12px; border-radius: 4px; font-family: 'Cinzel', serif; font-weight: 900; font-size: 0.78rem; cursor: pointer; color: #fff; border: 1px solid rgba(255,255,255,0.2); }
+        .btn-undo { background: #5d4037; } .btn-clear { background: #8e0000; }
+
+        .board-scroll-shell {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            min-height: 0;
+            flex: 1;
+            position: relative;
+        }
+        .board-scroll-top {
+            position: sticky;
+            top: 0;
+            z-index: 35;
+            overflow-x: auto;
+            overflow-y: hidden;
+            height: 18px;
+            background: linear-gradient(180deg, rgba(255,255,255,0.18), rgba(0,0,0,0.18));
+            border: 1px solid #6d4c41;
+            border-radius: 999px;
+            box-shadow: inset 0 1px 3px rgba(0,0,0,0.35), 0 3px 10px rgba(0,0,0,0.18);
+            backdrop-filter: blur(2px);
+        }
+        .board-scroll-top-inner {
+            height: 1px;
+        }
+        #table-wrapper { 
+            flex-grow: 1;
+            width: 100%;
+            min-height: 58vh; 
+            overflow: auto;
+            background: linear-gradient(180deg, #f7ebbb 0%, #eddc99 100%); 
+            border: 1px solid #3e2723;
+            border-radius: 8px;
+            position: relative;
+            outline: none;
+            scroll-behavior: smooth;
+            box-shadow: inset 0 2px 10px rgba(255,255,255,0.22), inset 0 -10px 18px rgba(0,0,0,0.08);
+        }
+        #table-wrapper:focus {
+            box-shadow: 0 0 0 3px rgba(212,175,55,0.45), inset 0 0 0 1px rgba(62,39,35,0.9);
+        }
+
+        .game-table { 
+            width: 100%; 
+            min-width: 1400px;
+            border-collapse: collapse; 
+            font-family: 'Crimson Text', serif; 
+            background: #f3e5ab; 
+            background-image: linear-gradient(rgba(255,255,255,0.5), rgba(255,255,255,0.5));
+        }
+        .game-table th, .game-table td { 
+            border: 2px solid #3e2723; 
+            padding: 8px; 
+            text-align: left; vertical-align: top; 
+            font-size: 1.2rem; 
+            color: #000; line-height: 1.3; 
+            background-clip: padding-box;
+            box-shadow: inset 0 1px 0 rgba(255,255,255,0.32), inset 0 -2px 0 rgba(0,0,0,0.08);
+        }
+        
+        .game-table thead th { 
+            background: linear-gradient(to bottom, #5d4037, #4e342e); 
+            color: #f3e5ab;
+            font-weight: 700; 
+            font-size: 1.1rem; 
+            text-align: center; 
+            text-transform: none; 
+            padding: 10px 8px;
+            border-bottom: 4px solid #2d1a12;
+            font-family: 'Cinzel', serif;
+            text-shadow: 0 1px 2px #000;
+            position: sticky; top: 0; z-index: 10;
+        }
+
+        .col-enzyme {
+            width: 12%;
+            min-width: 150px;
+            font-weight: 900;
+            position: sticky;
+            left: 0;
+            z-index: 6;
+            border-right: 1px solid #5d4037;
+            background: #d7ccc8;
+            color: #1f1f1f;
+            text-shadow: none;
+            box-shadow: none;
+        }
+        .game-table thead .col-enzyme {
+            z-index: 12;
+            background: #5d4037;
+            color: #f3e5ab;
+            box-shadow: none;
+        }
+        .col-source { width: 10%; min-width: 130px; }
+        .col-class { width: 10%; min-width: 130px; }
+        .col-substrate { width: 14%; min-width: 170px; }
+        .col-site { width: 12%; min-width: 180px; }
+        .col-product { width: 22%; min-width: 250px; }
+        .col-absorb { width: 21%; min-width: 320px; }
+
+        .drop-zone {
+            width: 100%; min-height: 60px; height: 100%;
+            display: flex; justify-content: center; align-items: center;
+            background: linear-gradient(180deg, rgba(255,255,255,0.24), rgba(0,0,0,0.04)); 
+            box-shadow: inset 0 2px 4px rgba(255,255,255,0.2), inset 0 -2px 4px rgba(0,0,0,0.16);
+            border-radius: 6px;
+            transition: all 0.2s;
+        }
+        .drop-zone.hover-target { background: rgba(212, 175, 55, 0.2); box-shadow: inset 0 0 0 2px var(--brass-primary); }
+        .drop-zone.filled { background: transparent; box-shadow: none; border: none; }
+
+        .chip { 
+            width: 100%; 
+            min-height: 50px; 
+            padding: 4px; 
+            border-radius: 8px; 
+            display: flex; justify-content: center; align-items: center; 
+            text-align: center; font-size: 0.95rem; font-weight: 900; 
+            font-family: 'Lato', sans-serif; cursor: pointer; 
+            color: #fff; text-shadow: 0 1px 2px rgba(0,0,0,0.8); 
+            border: 1px solid rgba(255,255,255,0.42); 
+            box-shadow: 0 8px 14px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.28), inset 0 -3px 0 rgba(0,0,0,0.18);
+            user-select: none; 
+            backdrop-filter: blur(4px);
+            transition: transform 0.1s, box-shadow 0.1s;
+            word-wrap: break-word; 
+        }
+        .chip:active { transform: translateY(3px); box-shadow: 0 2px 4px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.18); }
+        .chip.selected { 
+            border: 3px solid #fff !important; 
+            transform: scale(1.08); 
+            z-index: 100; 
+            box-shadow: 0 0 20px #ffd700, 0 0 40px #fff !important; 
+            text-shadow: 0 0 8px #000;
+            animation: pulse-select 1.5s infinite;
+        }
+
+        .action-btn, #contact-btn, #history-header-btn, #logout-btn, .zoom-btn, .auth-btn {
+            box-shadow: 0 6px 0 rgba(0,0,0,0.3), 0 10px 18px rgba(0,0,0,0.22);
+        }
+        .action-btn:active, #contact-btn:active, #history-header-btn:active, #logout-btn:active, .zoom-btn:active, .auth-btn:active {
+            transform: translateY(2px);
+            box-shadow: 0 3px 0 rgba(0,0,0,0.26), 0 6px 12px rgba(0,0,0,0.2);
+        }
+        .inventory-pool .chip:hover, .drop-zone .chip:hover {
+            box-shadow: 0 10px 18px rgba(0,0,0,0.42), inset 0 1px 0 rgba(255,255,255,0.3), inset 0 -3px 0 rgba(0,0,0,0.18);
+        }
+
+        @keyframes pulse-select {
+            0%, 100% { box-shadow: 0 0 20px #ffd700, 0 0 40px #fff; }
+            50% { box-shadow: 0 0 30px #ffd700, 0 0 60px #fff; }
+        }
+        
+        .chip.c1 { background: var(--chip-blue); } .chip.c2 { background: var(--chip-green); } .chip.c3 { background: var(--chip-purple); } .chip.c4 { background: var(--chip-red); } .chip.c5 { background: var(--chip-cyan); }
+
+        .drop-zone .chip { 
+            width: 100% !important; height: auto !important; min-height: 0 !important;
+            border-radius: 0 !important; box-shadow: none !important; border: none !important; 
+            background: transparent !important; 
+            color: #000 !important; text-shadow: none !important;
+            font-family: 'Crimson Text', serif !important; 
+            font-weight: 700 !important;
+            font-size: 1.2rem !important;
+            margin: 0; padding: 0;
+            display: block; text-align: left;
+            pointer-events: auto !important;
+            cursor: grab !important;
+            transition: all 0.2s;
+        }
+        
+        .drop-zone .chip:hover {
+            background: rgba(212, 175, 55, 0.1) !important;
+            text-decoration: underline;
+        }
+        
+        .drop-zone .chip:active {
+            cursor: grabbing !important;
+        }
+        
+        .drag-clone { position: fixed; pointer-events: none; z-index: 9999; width: 140px; height: 50px; background: #8d6e63; color: #fff; border-radius: 6px; border: 2px solid var(--brass-primary); display: flex; justify-content: center; align-items: center; text-align: center; font-weight: 900; font-size: 0.9rem; opacity: 0.9; transform: rotate(-3deg); box-shadow: 0 20px 40px rgba(0,0,0,0.5); }
+
+        .qr-verification-section {
+            margin: 30px 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #f5f5f5 0%, #e0e0e0 100%);
+            border: 3px solid #d4af37;
+            border-radius: 8px;
+            text-align: center;
+            box-shadow: inset 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .qr-verification-section h3 {
+            font-family: 'Cinzel', serif;
+            color: #3e2723;
+            margin-bottom: 15px;
+            font-size: 1.3rem;
+        }
+
+        #qr-code-container {
+            display: inline-block;
+            padding: 15px;
+            background: white;
+            border: 2px solid #3e2723;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+
+        .verification-code {
+            font-family: 'Courier New', monospace;
+            font-size: 1.1rem;
+            font-weight: 900;
+            color: #1a0f0a;
+            background: rgba(212, 175, 55, 0.2);
+            padding: 10px 20px;
+            border-radius: 4px;
+            margin-top: 10px;
+            letter-spacing: 2px;
+        }
+
+        .verification-url {
+            font-size: 0.9rem;
+            color: #5d4037;
+            margin-top: 10px;
+            font-style: italic;
+        }
+
+        #auth-screen, #verify-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.97); z-index: 8000; display: flex; justify-content: center; align-items: center; flex-direction: column; color: #e0d0c0; }
+        .auth-box { background: var(--wood-dark); border: 6px solid var(--wood-darkest); padding: 30px; border-radius: 6px; text-align: center; width: 100%; max-width: 500px; box-shadow: 0 0 100px rgba(0,0,0,1); }
+        .form-section { display: flex; flex-direction: column; width: 100%; }
+        .auth-title { color: var(--brass-primary); font-family: 'Crimson Text', serif; font-size: 3.5rem; font-weight: 700; border-bottom: 2px solid var(--brass-primary); padding-bottom: 10px; margin-bottom: 20px; text-shadow: 0 4px 10px rgba(0,0,0,0.8); }
+        .auth-input, .auth-select { width: 100%; padding: 12px; margin: 5px 0; background: #1a0f0a; border: 1px solid #5d4037; color: var(--brass-primary); font-family: 'Lato'; border-radius: 4px; outline: none; }
+        .auth-btn { width: 100%; padding: 15px; margin-top: 20px; background: var(--brass-primary); color: #1a0f0a; font-family: 'Cinzel'; font-weight: 900; border: none; cursor: pointer; font-size: 1.1rem; box-shadow: 0 5px 0 #8c6b0d; }
+        .auth-btn:active { transform: translateY(4px); box-shadow: none; }
+        .toggle-link { margin-top: 15px; text-decoration: underline; cursor: pointer; color: #d4af37; }
+
+        .entry-choice-wrap { display:flex; flex-direction:column; gap:18px; width:100%; margin-top:10px; }
+        .entry-choice-btn { width:100%; padding:22px 18px; border-radius:14px; border:1px solid rgba(255,255,255,0.18); cursor:pointer; font-family:'Cinzel', serif; font-size:1.35rem; font-weight:900; letter-spacing:1px; text-transform:uppercase; color:#fff; background: linear-gradient(180deg, rgba(255,255,255,0.20), rgba(255,255,255,0.04) 22%, rgba(0,0,0,0.16) 100%), linear-gradient(135deg, #8c6b0d 0%, #d4af37 52%, #8c6b0d 100%); box-shadow: 0 16px 28px rgba(0,0,0,0.34), inset 0 2px 0 rgba(255,255,255,0.45), inset 0 -4px 0 rgba(0,0,0,0.20), 0 0 0 1px rgba(255,255,255,0.10); transition: transform 0.15s ease, box-shadow 0.15s ease; }
+        .entry-choice-btn:hover { transform: translateY(-2px); box-shadow: 0 20px 34px rgba(0,0,0,0.42), inset 0 2px 0 rgba(255,255,255,0.5), inset 0 -4px 0 rgba(0,0,0,0.22), 0 0 20px rgba(212,175,55,0.18); }
+        .entry-choice-btn.secondary { background: linear-gradient(180deg, rgba(255,255,255,0.18), rgba(255,255,255,0.04) 22%, rgba(0,0,0,0.18) 100%), linear-gradient(135deg, #1c233f 0%, #33427c 52%, #131827 100%); }
+        .entry-helper { color:#e0d0c0; line-height:1.5; font-size:0.98rem; margin:0 0 4px; }
+        .subtle-auth-link { margin-top:16px; color:#d4af37; cursor:pointer; text-decoration:underline; font-weight:700; }
+
+        .board-card, .inventory-wrapper, .report-card, .auth-box, #table-wrapper, .history-item, .chip, .action-btn, #contact-btn, #feedback-btn, #history-header-btn, #logout-btn, .zoom-btn, .auth-btn, .nav-tab, .drop-zone, .game-table thead th, .game-table td {
+            position: relative;
+        }
+        .board-card::before, .inventory-wrapper::before, .report-card::before, .auth-box::before, #table-wrapper::before {
+            content:''; position:absolute; inset:0; pointer-events:none; border-radius:inherit; background: linear-gradient(180deg, rgba(255,255,255,0.17) 0%, rgba(255,255,255,0.05) 14%, rgba(255,255,255,0) 38%); mix-blend-mode: screen;
+        }
+        .game-table td { background-image: linear-gradient(180deg, rgba(255,255,255,0.22), rgba(255,255,255,0.06) 42%, rgba(0,0,0,0.05) 100%); box-shadow: inset 0 1px 0 rgba(255,255,255,0.45), inset 0 -2px 0 rgba(0,0,0,0.10), 0 1px 0 rgba(255,255,255,0.08); }
+        .game-table thead th { box-shadow: inset 0 1px 0 rgba(255,255,255,0.26), inset 0 -3px 0 rgba(0,0,0,0.22), 0 4px 10px rgba(0,0,0,0.15); }
+        .drop-zone { background: linear-gradient(180deg, rgba(255,255,255,0.30), rgba(255,255,255,0.10) 28%, rgba(0,0,0,0.05) 100%); box-shadow: inset 0 2px 5px rgba(255,255,255,0.30), inset 0 -2px 4px rgba(0,0,0,0.14), 0 1px 0 rgba(255,255,255,0.10); }
+        .drop-zone .chip { border-radius: 8px !important; padding: 10px 8px !important; background-image: linear-gradient(180deg, rgba(255,255,255,0.18), rgba(255,255,255,0.02) 42%, rgba(0,0,0,0.06) 100%) !important; box-shadow: inset 0 1px 0 rgba(255,255,255,0.22), inset 0 -2px 0 rgba(0,0,0,0.08) !important; }
+        .inventory-pool .chip { background-image: linear-gradient(180deg, rgba(255,255,255,0.22), rgba(255,255,255,0.05) 32%, rgba(0,0,0,0.12) 100%) !important; }
+        #feedback-btn, #contact-btn, #logout-btn, #history-header-btn, .action-btn, .auth-btn, .zoom-btn, .nav-tab { overflow:hidden; }
+        #feedback-btn::before, #contact-btn::before, #logout-btn::before, #history-header-btn::before, .action-btn::before, .auth-btn::before, .zoom-btn::before, .nav-tab::before { content:''; position:absolute; left:0; right:0; top:0; height:48%; background: linear-gradient(180deg, rgba(255,255,255,0.25), rgba(255,255,255,0.03)); pointer-events:none; }
+        #review-session-btn.review-unlocked { animation: reviewGlow 1.4s ease-in-out infinite; box-shadow: 0 0 0 1px rgba(255,255,255,0.10), 0 10px 18px rgba(0,0,0,0.32), 0 0 18px rgba(139, 92, 246, 0.55); }
+        @keyframes reviewGlow { 0%,100% { transform: translateY(0); filter: brightness(1); } 50% { transform: translateY(-1px); filter: brightness(1.12); } }
+        .review-answer-cell.correct { background: linear-gradient(180deg, rgba(255,255,255,0.20), rgba(46,125,50,0.18)); color:#145a1b; }
+        .review-answer-cell.wrong { background: linear-gradient(180deg, rgba(255,255,255,0.18), rgba(198,40,40,0.16)); color:#8b1111; }
+        .review-answer-cell .status-icon { display:inline-flex; align-items:center; justify-content:center; width:26px; height:26px; border-radius:50%; margin-bottom:6px; font-size:1rem; font-weight:900; }
+        .review-answer-cell.correct .status-icon { background:#2e7d32; color:#fff; }
+        .review-answer-cell.wrong .status-icon { background:#c62828; color:#fff; }
+
+
+        .report-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.98); z-index: 6000; justify-content: center; align-items: center; }
+        .report-card { background: #f5f5f5; color: #000; width: 95%; max-width: 900px; max-height: 90vh; border: 8px solid var(--wood-dark); display: flex; flex-direction: column; overflow-y: auto; position: relative; }
+        .report-header { background: var(--wood-darkest); color: var(--brass-primary); padding: 20px; text-align: center; font-family: 'Cinzel'; font-size: 1.5rem; font-weight: 900; border-bottom: 5px solid var(--brass-primary); }
+        .scorecard-brand { display:flex; align-items:center; justify-content:center; gap:14px; margin-bottom:8px; flex-wrap:wrap; }
+        .scorecard-logo { width:56px; height:56px; border-radius:14px; display:flex; align-items:center; justify-content:center; background: radial-gradient(circle at 30% 30%, #f3d77a, #d4af37 58%, #8c6a17 100%); color:#1a0f0a; font-family:'Cinzel', serif; font-size:1.35rem; font-weight:900; letter-spacing:0.04em; box-shadow: inset 0 2px 6px rgba(255,255,255,0.35), inset 0 -4px 8px rgba(0,0,0,0.25), 0 8px 18px rgba(0,0,0,0.28); border: 1px solid rgba(255,255,255,0.4); }
+        .scorecard-brand-name { font-size:1.55rem; font-weight:900; line-height:1; letter-spacing:0.03em; }
+        .scorecard-brand-tag { font-family:'Lato', sans-serif; font-size:0.92rem; color:#f0e0b2; letter-spacing:0.04em; text-transform:uppercase; margin-top:4px; }
+        .scorecard-title { font-size:1.1rem; letter-spacing:0.08em; }
+        .report-content { padding: 20px; }
+        .report-table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+        .report-table th { background: #ddd; padding: 10px; text-align: left; font-family: 'Cinzel'; border-bottom: 2px solid #000; }
+        .report-table td { padding: 10px; border-bottom: 1px solid #ccc; }
+        .status-pass { color: #2e7d32; font-weight: 900; } .status-fail { color: #c62828; font-weight: 900; }
+        .user-details-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px; border-bottom: 2px solid #ccc; padding-bottom: 10px; }
+        .watermark-text { margin-top: 20px; text-align: center; color: #333; font-size: 0.8rem; font-weight: 900; font-family: 'Cinzel', serif; padding: 10px; border-top: 2px solid #ccc; line-height: 1.4; }
+        .report-summary-box {
+            text-align:center;
+            font-weight:900;
+            font-size:1.6rem;
+            margin:20px 0 10px;
+            padding:20px;
+            border:3px solid #000;
+            text-transform:uppercase;
+            background:#fff;
+        }
+        .backend-note {
+            text-align:center;
+            margin: 0 0 22px;
+            color:#555;
+            font-size:0.95rem;
+            font-weight:700;
+        }
+        .history-list {
+            display:flex;
+            flex-direction:column;
+            gap:12px;
+            margin-top:18px;
+        }
+        .history-item {
+            border:2px solid #d7c7ad;
+            border-radius:8px;
+            padding:14px;
+            background:#fff;
+            display:flex;
+            justify-content:space-between;
+            align-items:center;
+            gap:12px;
+            flex-wrap:wrap;
+        }
+        .history-meta {
+            display:grid;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap:8px 18px;
+            flex:1;
+        }
+        .history-meta strong { display:block; font-size:0.78rem; text-transform:uppercase; color:#6a4b17; }
+        .history-meta span { font-weight:800; color:#1a0f0a; }
+        .history-action-btn, .secondary-btn {
+            background:#3e2723;
+            color:#fff;
+            border:none;
+            padding:12px 16px;
+            border-radius:6px;
+            cursor:pointer;
+            font-family:'Cinzel', serif;
+            font-weight:900;
+        }
+        .history-action-btn:hover, .secondary-btn:hover { filter: brightness(1.08); }
+        .review-grid {
+            display:grid;
+            grid-template-columns: minmax(0, 2fr) minmax(280px, 1fr);
+            gap:18px;
+            align-items:start;
+        }
+        .review-board-container {
+            display:flex;
+            flex-direction:column;
+            gap:18px;
+        }
+        .review-section-card {
+            border:2px solid #d7ccc8;
+            border-radius:10px;
+            overflow:hidden;
+            background:#fff;
+            box-shadow: 0 4px 14px rgba(0,0,0,0.08);
+        }
+        .review-section-title {
+            background:linear-gradient(to right, #000, #5d4037);
+            color:#fff;
+            padding:10px 14px;
+            font-family:'Cinzel', serif;
+            font-weight:900;
+            letter-spacing:0.5px;
+        }
+        .review-section-wrap { overflow-x:auto; }
+        .review-board-table { width:100%; border-collapse:collapse; min-width:980px; }
+        .review-board-table th, .review-board-table td { border:1px solid #e7ddd6; padding:8px; vertical-align:top; }
+        .review-board-table th { background:#f7f2ee; color:#3e2723; font-size:0.86rem; text-transform:uppercase; }
+        .review-enzyme-cell { font-weight:900; background:#fcfaf8; min-width:170px; }
+        .review-answer-cell { min-width:130px; font-weight:800; position:relative; }
+        .review-answer-cell .review-answer-status { display:block; font-size:0.75rem; text-transform:uppercase; letter-spacing:0.4px; margin-top:6px; opacity:0.95; }
+        .review-answer-cell.correct { background:#ebf7ee; border-left:4px solid #2e7d32; }
+        .review-answer-cell.wrong { background:#fff0f0; border-left:4px solid #c62828; cursor:pointer; }
+        .review-answer-cell.correct::after { content:'✔'; position:absolute; top:6px; right:8px; font-weight:900; color:#2e7d32; }
+        .review-answer-cell.wrong::after { content:'✖'; position:absolute; top:6px; right:8px; font-weight:900; color:#c62828; }
+        .review-answer-cell.empty { color:#777; font-style:italic; }
+        .hint-panel {
+            background: linear-gradient(180deg, #0a1024, #000);
+            color:#fff;
+            border:3px solid var(--brass-primary);
+            border-radius:10px;
+            overflow:hidden;
+            position:sticky;
+            top:15px;
+        }
+        .hint-panel-header {
+            padding:12px;
+            text-align:center;
+            font-family:'Cinzel', serif;
+            font-weight:900;
+            border-bottom:1px solid rgba(255,255,255,0.15);
+            background:rgba(255,255,255,0.05);
+        }
+        .hint-panel-body {
+            padding:14px;
+            min-height:200px;
+        }
+        .hint-choice {
+            padding:10px 12px;
+            border-radius:6px;
+            margin-bottom:10px;
+            border:2px solid rgba(255,255,255,0.12);
+            background:rgba(255,255,255,0.06);
+            font-weight:800;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        .hint-choice.glow {
+            border-color:#ffe57f;
+            box-shadow:0 0 18px rgba(255,229,127,0.85);
+            transform:scale(1.02);
+        }
+        .hint-choice.correct-option {
+            border-color:#81c784;
+            box-shadow:0 0 18px rgba(129,199,132,0.8);
+        }
+        .review-lock-note {
+            margin-top:12px;
+            padding:10px 12px;
+            border-radius:6px;
+            background:#fff9c4;
+            color:#5d4037;
+            font-weight:800;
+            font-size:0.88rem;
+        }
+
+        @media (min-width: 1100px) {
+            header { padding: 5px 14px; }
+            .header-controls { flex-wrap: nowrap; }
+            .board-wrapper { flex: 5.2; }
+            .inventory-wrapper { flex: 1.45; }
+        }
+
+
+        @media (max-width: 800px) {
+            #scalable-content { flex-direction: column; height: auto; }
+            .inventory-wrapper { width: 100%; height: 35vh; border-left: none; border-top: 4px solid var(--brass-primary); max-width: none; }
+            .board-wrapper { height: 65vh; flex: none; width: 100%; }
+            .zoom-control { display: none; }
+        }
+
+        @media print {
+            body * { visibility: hidden; }
+            #report-modal { visibility: visible; position: absolute; left: 0; top: 0; width: 100%; height: 100%; z-index: 9999; }
+            #report-modal * { visibility: visible; }
+            #confetti, canvas { display: none !important; visibility: hidden !important; opacity: 0 !important; }
+            .report-card { border: 2px solid #000; box-shadow: none; width: 100%; max-width: 100%; height: auto; display: block; }
+            .auth-btn, .action-btn { display: none !important; }
+            .watermark-text { color: #000 !important; }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="admin-btn-visible" onclick="exportToExcel()"></div>
+
+    <div id="contact-modal" class="report-modal">
+        <div class="auth-box" style="position:relative;">
+            <h2 style="color:var(--brass-primary); font-family:'Cinzel', serif;">Contact Us</h2>
+            <p style="color:#e0d0c0; margin:20px 0; font-size:1.1rem;">For inquiries, please email:</p>
+            <div style="background:rgba(0,0,0,0.3); padding:15px; border:1px solid #5d4037; color:#fff; font-weight:bold; font-size:1.2rem; user-select:text;">a.i.alagbonsi@ur.ac.rw</div>
+            <div style="display:flex; flex-direction:column; gap:12px; margin-top:18px;">
+            <a href="https://forms.gle/bHcMYgEVdcmUSHVm8" target="_blank" rel="noopener noreferrer" class="auth-btn" style="display:block; text-decoration:none; text-align:center;">LEAVE A REVIEW / FEEDBACK</a>
+            <button class="auth-btn" onclick="closeContact()">CLOSE</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="auth-screen">
+        <div class="auth-box">
+            <h2 class="auth-title" id="form-title">GutDigest<br><span style="font-size:1.5rem; font-family:Cinzel;">Welcome</span></h2>
+            <p style="color:#d4af37; font-size:0.9rem; margin-bottom:15px; font-weight:bold;">(Gmail is recommended for fastest verification)</p>
+
+            <div id="entry-choice" class="form-section">
+                <p class="entry-helper">Choose your path to continue.</p>
+                <div class="entry-choice-wrap">
+                    <button class="entry-choice-btn" onclick="showSignupPage()">NEW USER</button>
+                    <button class="entry-choice-btn secondary" onclick="showLoginPage()">EXISTING USER</button>
+                </div>
+            </div>
+            
+            <div id="login-form" class="form-section" style="display:none;">
+                <input type="email" id="login-email" class="auth-input" placeholder="Email Address">
+                <input type="password" id="login-password" class="auth-input" placeholder="Password">
+                <button class="auth-btn" onclick="handleAuth()">LOGIN</button>
+                <div style="margin-top:15px; text-align:right; width:100%;">
+                    <span style="color:#8d6e63; cursor:pointer; font-size:0.9rem; text-decoration:underline;" onclick="toggleForgotMode()">Forgot Password?</span>
+                </div>
+                <div class="subtle-auth-link" onclick="showAuthChoice()">Back</div>
+            </div>
+
+            <div id="signup-form" class="form-section" style="display:none;">
+                <input type="email" id="signup-email" class="auth-input" placeholder="Email Address">
+                <input type="password" id="signup-password" class="auth-input" placeholder="Password">
+                <hr style="width:100%; border:0; border-top:1px solid #5d4037; margin:10px 0;">
+                <input type="text" id="fullName" class="auth-input" placeholder="Full Name">
+                <input type="text" id="institution" class="auth-input" placeholder="Institution">
+                <input type="text" id="course" class="auth-input" placeholder="Course/Department">
+                <div style="display:flex; gap:10px; width:100%;">
+                    <select id="level" class="auth-select" style="cursor:pointer; flex:1;">
+                        <option value="" disabled selected>Select Level</option>
+                        <option value="Undergraduate">Undergraduate</option>
+                        <option value="Postgraduate">Postgraduate</option>
+                        <option value="Faculty">Faculty</option>
+                    </select>
+                    <select id="role" class="auth-select" style="cursor:pointer; flex:1;">
+                        <option value="" disabled selected>Select Role</option>
+                        <option value="Student">Student</option>
+                        <option value="Tutor">Tutor</option>
+                    </select>
+                </div>
+                <input type="text" id="country" class="auth-input" placeholder="Country">
+                <button class="auth-btn" onclick="handleAuth()">SIGN UP</button>
+                <div class="subtle-auth-link" onclick="showAuthChoice()">Back</div>
+            </div>
+
+            <div id="forgot-form" class="form-section" style="display:none;">
+                <p style="color:#e0d0c0; font-size:1rem; margin-bottom:15px;">Enter your email address.</p>
+                <input type="email" id="forgot-email" class="auth-input" placeholder="Enter your registered email">
+                <button class="auth-btn" onclick="resetPassword()">SEND RESET LINK</button>
+                <div style="margin-top:20px; text-align:center; width:100%;">
+                    <span style="color:#d4af37; cursor:pointer; font-weight:bold; text-decoration:underline;" onclick="toggleForgotMode()">Back to Login</span>
+                </div>
+            </div>
+
+            <p id="auth-error" style="color:#ef5350; font-size:1rem; margin-top:15px; font-weight:bold; padding: 10px;"></p>
+        </div>
+    </div>
+
+    <div id="verify-screen" style="display:none;">
+        <div class="auth-box">
+            <h2 style="color:var(--brass-primary); font-family:'Cinzel', serif;">Check Your Inbox</h2>
+            <p style="color:#e0d0c0; margin:15px 0; font-size:1.1rem; line-height:1.5;">We sent a verification link to:<br><strong id="verify-email-display" style="color:#fff; font-size:1.3rem;"></strong></p>
+            <p style="color:#8d6e63; font-size:0.9rem;">(Yahoo/Outlook can take up to 5 mins)</p>
+            <button class="auth-btn" onclick="completeVerificationCheck()">I HAVE VERIFIED MY EMAIL</button>
+            <button id="resend-btn" class="auth-btn" style="background:transparent; border:1px solid #5d4037; color:#8d6e63; margin-top:10px; font-size:1rem;" onclick="resendVerification()">Resend Email</button>
+            <div class="toggle-link" onclick="returnToLoginAfterVerification()">Back to Login</div>
+        </div>
+    </div>
+
+    <header>
+        <div class="header-top">
+            <h1>GutDigest</h1>
+            <div class="header-controls">
+                <div id="live-stats-bar">
+                    <span>PLAYERS: <strong id="global-players">0</strong></span>
+                    <span>PASSES: <strong id="global-passes">0</strong></span>
+                    <span>FAILS: <strong id="global-fails">0</strong></span>
+                </div>
+                <div style="color:#e0d0c0; font-family:'Lato'; font-weight:bold; display:flex; flex-direction:column; justify-content:center; text-align:right; min-width:0; flex:0 1 auto;">
+                    <span id="display-username" style="color:#d4af37; font-family:'Cinzel'; font-size:1rem; max-width:400px; line-height:1.2;">Guest</span><button id="history-header-btn" onclick="openHistoryModal()" style="margin-top:4px; align-self:flex-end;">GAME HISTORY</button>
+                </div>
+                <button id="feedback-btn" onclick="openFeedback()">FEEDBACK</button>
+                <button id="contact-btn" onclick="handleContact()">CONTACT US</button>
+                <button id="logout-btn" onclick="handleLogout()">LOGOUT</button>
+                <div class="zoom-control">
+                    ZOOM: <button class="zoom-btn" onclick="adjustZoom(-0.1)">-</button>
+                    <input type="range" id="zoomRange" min="0.5" max="1.5" step="0.1" value="1" oninput="updateZoom(this.value)">
+                    <button class="zoom-btn" onclick="adjustZoom(0.1)">+</button>
+                </div>
+                <button id="submit-all-btn" onclick="submitSimulation()">SUBMIT GAME</button>
+            </div>
+        </div>
+        <div class="nav-scroller" id="nav-tabs"></div>
+    </header>
+
+    <div class="main-scroll-container">
+        <div id="scalable-content">
+            <div class="game-layout">
+                
+                <div class="board-wrapper">
+                    
+                    <div class="stage-title-display" id="stage-title">Loading...</div>
+                    
+                    <div class="stage-description" id="stage-desc">
+                    </div>
+                    
+                    <div class="mid-copyright">
+                        &copy; <span class="current-year"></span> Abdullateef Isiaka Alagbonsi, Toyin Mohammed Salman, Mary Oluwatobi Dada, Elijah Seun Okedun, Aminat Abiola Ajibola, Aolat Adepeju Adepoju, Kazeem Adewale Gbolagade, Fernanda Klein Marcondes
+                    </div>
+
+                    <div class="action-bar">
+                        <button class="action-btn btn-undo" onclick="undoLastMove()">↩ Undo</button>
+                        <button class="action-btn btn-clear" onclick="clearCurrentStage()">✖ Clear</button>
+                    </div>
+                    
+                    <div class="board-card">
+                        <div style="background: linear-gradient(to right, #000, #5d4037); color: #fff; padding: 12px; text-align: center; font-family: 'Cinzel', serif; font-weight: 700; font-size: 1rem; border-bottom: 2px solid var(--brass-primary); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px; border-radius: 4px 4px 0 0;">GAME BOARD</div>
+                        <div class="board-scroll-shell">
+                            <div id="board-scroll-top" class="board-scroll-top" aria-hidden="true"><div id="board-scroll-top-inner" class="board-scroll-top-inner"></div></div>
+                            <div id="table-wrapper" tabindex="0" aria-label="Game board. Click an empty area, then use arrow keys to scroll.">
+                                <table class="game-table" id="game-table">
+                                    <thead>
+                                        <tr>
+                                            <th class="col-enzyme">Enzyme</th>
+                                            <th class="col-source">Source</th>
+                                            <th class="col-class">Class</th>
+                                            <th class="col-substrate">Substrate</th>
+                                            <th class="col-site">Major site of action</th>
+                                            <th class="col-product">End product of digestion</th>
+                                            <th class="col-absorb">Means of enterocyte absorption of end products</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="table-body">
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        
+                        <div id="stage-footnote" class="stage-footnote"></div>
+                    </div>
+
+                </div>
+
+                <div class="inventory-wrapper">
+                    <div class="inventory-header">E-Token Repository</div>
+                    <div class="inventory-controls">
+                        <div>
+                            <label for="token-color-mode">E-Token color mode</label>
+                            <select id="token-color-mode" onchange="handleTokenColorModeChange()">
+                                <option value="multicolor">Multicolor</option>
+                                <option value="high-contrast">High contrast</option>
+                                <option value="monochrome">Black &amp; white</option>
+                                <option value="single">Single color</option>
+                            </select>
+                        </div>
+                        <div id="single-color-wrap" style="display:none;">
+                            <label for="single-token-color">Preferred e-token color</label>
+                            <input type="color" id="single-token-color" value="#1f40ef" onchange="applyTokenColors()">
+                        </div>
+                        <div class="inventory-help" id="inventory-help-text">Multicolor helps players separate many e-tokens quickly using varied shades.</div>
+                    </div>
+                    <div class="inventory-pool" id="pool"></div>
+                </div>
+            
+            </div>
+        </div>
+    </div>
+
+    <div id="report-modal" class="report-modal">
+        <div class="report-card">
+            <div class="report-header"><div class="scorecard-brand"><div class="scorecard-logo" aria-hidden="true">GD</div><div><div class="scorecard-brand-name">GutDigest</div><div class="scorecard-brand-tag">Advanced Physiology Gamification</div></div></div><div class="scorecard-title">GAME RESULTS</div></div>
+            <div class="report-content">
+                <div class="user-details-grid" id="report-user-details"></div>
+                <table class="report-table">
+                    <thead><tr><th>Section</th><th>Accuracy</th><th>Correct E-Tokens</th></tr></thead>
+                    <tbody id="report-body"></tbody>
+                </table>
+                <div id="final-verdict" class="report-summary-box"></div>
+                <div id="backend-note" class="backend-note"></div>
+                <div style="text-align:center; color:#555; font-style:italic; margin-bottom:24px; font-weight:bold; font-size:1.15rem;" id="quote-area"></div>
+                
+                <div class="qr-verification-section">
+                    <h3>🔐 VERIFY AUTHENTICITY</h3>
+                    <div id="qr-code-container"></div>
+                    <div class="verification-code" id="verification-code">Loading...</div>
+                    <div class="verification-url" style="font-size:1rem; line-height:1.8;">
+    <strong>📋 VERIFICATION INSTRUCTIONS:</strong><br>
+    1️⃣ Scan QR code to get verification code<br>
+    2️⃣ Go to <strong style="color:#d4af37;">https://physiogame.github.io/gimotility/verify</strong><br>
+    3️⃣ Paste code and click VERIFY
+
+</div>
+                    <p style="font-size:0.85rem; color:#666; margin-top:10px; font-style:italic;">
+                        This report can be verified online. Fake reports will be flagged as INVALID.
+                    </p>
+                </div>
+                
+                <div style="display:flex; gap:10px; justify-content:center; flex-wrap:wrap;">
+                    <button class="auth-btn" style="background:#5d4037; color:#fff;" onclick="downloadResultPdf()">DOWNLOAD RESULT</button>
+                    <button class="auth-btn" onclick="resetGameSession()">INITIATE NEW SESSION</button>
+                    <button class="auth-btn" id="review-session-btn" style="display:inline-block; background:#6a1b9a; color:#fff;" onclick="openTileReview()">REVIEW MISTAKES</button>
+                </div>
+                <div class="watermark-text">&copy; <span class="current-year"></span> Abdullateef Isiaka Alagbonsi, Toyin Mohammed Salman, Mary Oluwatobi Dada, Elijah Seun Okedun, Aminat Abiola Ajibola, Aolat Adepeju Adepoju, Kazeem Adewale Gbolagade, Fernanda Klein Marcondes</div>
+            </div>
+        </div>
+        <canvas id="confetti" style="position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:5001;"></canvas>
+    </div>
+
+    <div id="history-modal" class="report-modal">
+        <div class="report-card">
+            <div class="report-header">GAME HISTORY</div>
+            <div class="report-content">
+                <p style="font-weight:800; color:#5d4037; margin-top:0;">Previous attempts and their score cards for this player.</p>
+                <div id="history-list" class="history-list"></div>
+                <div style="display:flex; justify-content:center; margin-top:18px;">
+                    <button class="secondary-btn" onclick="closeHistoryModal()">CLOSE</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="tile-review-modal" class="report-modal">
+        <div class="report-card">
+            <div class="report-header">REVIEW MISTAKES</div>
+            <div class="report-content">
+                <div class="review-grid">
+                    <div>
+                        <p style="font-weight:800; color:#5d4037; margin-top:0;">This review mirrors the game board in a locked, unplayable format. Green cells show correct choices. Red cells show missed or wrong choices.</p>
+                        <div id="review-board-container" class="review-board-container"></div>
+                    </div>
+                    <div class="hint-panel">
+                        <div class="hint-panel-header">Review Guide</div>
+                        <div id="hint-panel-body" class="hint-panel-body">
+                            <p style="margin-top:0; line-height:1.5;">After every third failed attempt, this one-time review shows only what you got correct and what you missed. It does not reveal the correct answer.</p>
+                        </div>
+                    </div>
+                </div>
+                <div id="review-lock-note" class="review-lock-note">This review unlocks on every third failed attempt. Once opened for a score card, it can only be viewed one time in this browser.</div>
+                <div style="display:flex; justify-content:center; margin-top:18px;">
+                    <button class="secondary-btn" onclick="closeTileReview()">CLOSE REVIEW</button>
+                </div>
+            </div>
+        </div>
+    </div></div>
+
+    <script>
+        // ============================================
+        // 🔥 YOUR ORIGINAL FIREBASE CONFIGURATION
+        // Existing users keep their accounts and progress!
+        // ============================================
+        const firebaseConfig = {
+            apiKey: "AIzaSyA2zQtQ5KiQDlxEtLun5xeHt361g_l4jro",
+            authDomain: "physiopuzzle-af7d0.firebaseapp.com",
+            projectId: "physiopuzzle-af7d0",
+            storageBucket: "physiopuzzle-af7d0.firebasestorage.app",
+            messagingSenderId: "627635975940",
+            appId: "1:627635975940:web:e3704ddc88b077a6bd0251",
+            measurementId: "G-HY664SZJZG"
+        };
+        
+        try { 
+            if (typeof firebase !== 'undefined' && !firebase.apps.length) {
+                firebase.initializeApp(firebaseConfig); 
+            }
+        } catch(e) { 
+            console.error("Firebase Init Error:", e); 
+        }
+        
+        const auth = (typeof firebase !== 'undefined' && firebase.auth) ? firebase.auth() : null;
+        const db = (typeof firebase !== 'undefined' && firebase.firestore) ? firebase.firestore() : null;
+
+        // ============================================
+        // CRYPTO FUNCTIONS FOR VERIFICATION
+        // ============================================
+        const SECRET_SALT = "GutDigest_Secure_2025_Alagbonsi_UR";
+
+        async function generateHash(data) {
+            const text = JSON.stringify(data) + SECRET_SALT;
+            const encoder = new TextEncoder();
+            const dataBuffer = encoder.encode(text);
+            const hashBuffer = await crypto.subtle.digest('SHA-256', dataBuffer);
+            const hashArray = Array.from(new Uint8Array(hashBuffer));
+            return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+        }
+
+        function generateSubmissionId() {
+            const date = new Date();
+            const dateStr = date.toISOString().slice(0, 10).replace(/-/g, '');
+            const random = Math.random().toString(36).substr(2, 6).toUpperCase();
+            return `GD-${dateStr}-${random}`;
+        }
+
+        // ============================================
+        // USER PROFILE MANAGEMENT
+        // ============================================
+        let isSignUp = false; 
+        let currentUser = null; 
+        let userProfile = null;
+        let sessionId = generateSessionId();
+
+        function generateSessionId() {
+            return 'session_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+        }
+
+        // ============================================
+        // AUTH FLOW
+        // ============================================
+        if(auth) {
+            auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL).then(() => {
+                auth.onAuthStateChanged(async (user) => {
+                    if(user && user.emailVerified) {
+                        if (localStorage.getItem('gutdigest_expect_login_after_verify') === '1') {
+                            const verifiedEmail = user.email || localStorage.getItem('gutdigest_pending_verify_email') || '';
+                            localStorage.removeItem('gutdigest_expect_login_after_verify');
+                            localStorage.setItem('gutdigest_pending_verify_email', verifiedEmail);
+                            auth.signOut().finally(() => {
+                                document.getElementById('verify-screen').style.display = 'none';
+                                document.getElementById('auth-screen').style.display = 'flex';
+                                showLoginPage(verifiedEmail);
+                            });
+                            return;
+                        }
+                        currentUser = user;
+                        
+                        if(db) {
+                            try {
+                                const doc = await db.collection('users').doc(user.uid).get();
+                                if(doc.exists) {
+                                    userProfile = doc.data();
+                                    updateDisplayName();
+                                    
+                                    if(!document.getElementById('table-body') || document.getElementById('table-body').children.length === 0) {
+                                        initGame();
+                                    } else {
+                                        checkGlobalSubmissionStatus();
+                                    }
+                                } else {
+                                    userProfile = {
+                                        fullName: user.email.split('@')[0],
+                                        institution: "Unknown",
+                                        email: user.email
+                                    };
+                                    updateDisplayName();
+                                    initGame();
+                                }
+                            } catch(e) {
+                                console.error("Error loading profile:", e);
+                                userProfile = {
+                                    fullName: user.email.split('@')[0],
+                                    institution: "Unknown",
+                                    email: user.email
+                                };
+                                updateDisplayName();
+                                initGame();
+                            }
+                        }
+                        
+                        document.getElementById('auth-screen').style.display = 'none';
+                        initLiveStats();
+                    } else if(user && !user.emailVerified) {
+                        document.getElementById('verify-email-display').innerText = user.email;
+                        document.getElementById('auth-screen').style.display = 'none';
+                        document.getElementById('verify-screen').style.display = 'flex';
+                    } else {
+                        document.getElementById('auth-screen').style.display = 'flex';
+                showAuthChoice();
+                        currentUser = null;
+                        userProfile = null;
+                    }
+                });
+            }).catch(e => {
+                console.error("Auth persistence error:", e);
+            });
+        }
+
+        function updateDisplayName() {
+            const displayElement = document.getElementById('display-username');
+            if(userProfile && userProfile.fullName) {
+                const name = userProfile.fullName;
+                const inst = userProfile.institution || 'N/A';
+                displayElement.innerText = `Welcome, ${name} (${inst})`;
+                displayElement.style.color = '#d4af37';
+            } else if(currentUser && currentUser.email) {
+                displayElement.innerText = `Welcome, ${currentUser.email.split('@')[0]}`;
+                displayElement.style.color = '#d4af37';
+            } else {
+                displayElement.innerText = 'Guest';
+                displayElement.style.color = '#8d6e63';
+            }
+        }
+
+        function handleLogout() {
+            if(confirm("Sign out? Your progress will be saved.")) {
+                saveCurrentStageState();
+                if(auth) {
+                    auth.signOut().then(() => { 
+                        location.reload(); 
+                    });
+                }
+            }
+        }
+
+        function handleContact() { 
+            document.getElementById('contact-modal').style.display = 'flex'; 
+        }
+        
+        function closeContact() { 
+            document.getElementById('contact-modal').style.display = 'none'; 
+        }
+        
+        function updateZoom(val) { 
+            document.getElementById('scalable-content').style.zoom = val; 
+        }
+        
+        function adjustZoom(delta) {
+            const range = document.getElementById('zoomRange');
+            let val = parseFloat(range.value) + delta;
+            if(val >= 0.5 && val <= 1.5) {
+                val = Math.round(val * 10) / 10;
+                range.value = val;
+                updateZoom(val);
+            }
+        }
+
+        let isForgotMode = false;
+        
+        function toggleForgotMode() {
+            isForgotMode = !isForgotMode;
+            document.getElementById('entry-choice').style.display = 'none';
+            document.getElementById('login-form').style.display = 'none';
+            document.getElementById('signup-form').style.display = 'none';
+            document.getElementById('forgot-form').style.display = 'none';
+            document.getElementById('auth-error').innerText = "";
+            if (isForgotMode) {
+                document.getElementById('form-title').innerHTML = "Reset<br><span style='font-size:1.5rem; font-family:Cinzel;'>Password</span>";
+                document.getElementById('forgot-form').style.display = 'flex';
+            } else {
+                showLoginPage(document.getElementById('login-email').value || '');
+            }
+        }
+
+        function resetPassword() {
+            const email = document.getElementById('forgot-email').value;
+            if(!email) { 
+                document.getElementById('auth-error').innerText = "Please enter email."; 
+                return; 
+            }
+            
+            auth.sendPasswordResetEmail(email).then(() => {
+                alert("Password reset email sent!"); 
+                toggleForgotMode(); 
+            }).catch((error) => { 
+                document.getElementById('auth-error').innerText = error.message; 
+            });
+        }
+
+        
+        function showAuthChoice() {
+            isForgotMode = false;
+            isSignUp = false;
+            document.getElementById('entry-choice').style.display = 'flex';
+            document.getElementById('login-form').style.display = 'none';
+            document.getElementById('signup-form').style.display = 'none';
+            document.getElementById('forgot-form').style.display = 'none';
+            document.getElementById('form-title').innerHTML = "GutDigest<br><span style='font-size:1.5rem; font-family:Cinzel;'>Welcome</span>";
+            document.getElementById('auth-error').innerText = "";
+        }
+
+        function showLoginPage(prefillEmail = '') {
+            isForgotMode = false;
+            isSignUp = false;
+            document.getElementById('entry-choice').style.display = 'none';
+            document.getElementById('login-form').style.display = 'flex';
+            document.getElementById('signup-form').style.display = 'none';
+            document.getElementById('forgot-form').style.display = 'none';
+            document.getElementById('form-title').innerHTML = "GutDigest<br><span style='font-size:1.5rem; font-family:Cinzel;'>Login</span>";
+            if (prefillEmail) document.getElementById('login-email').value = prefillEmail;
+            document.getElementById('auth-error').innerText = "";
+        }
+
+        function showSignupPage() {
+            isForgotMode = false;
+            isSignUp = true;
+            document.getElementById('entry-choice').style.display = 'none';
+            document.getElementById('login-form').style.display = 'none';
+            document.getElementById('signup-form').style.display = 'flex';
+            document.getElementById('forgot-form').style.display = 'none';
+            document.getElementById('form-title').innerHTML = "GutDigest<br><span style='font-size:1.5rem; font-family:Cinzel;'>Sign Up</span>";
+            document.getElementById('auth-error').innerText = "";
+        }
+
+        function returnToLoginAfterVerification() {
+            try { if (auth && auth.currentUser) { auth.signOut(); } } catch (e) {}
+            document.getElementById('verify-screen').style.display = 'none';
+            document.getElementById('auth-screen').style.display = 'flex';
+            const pendingEmail = localStorage.getItem('gutdigest_pending_verify_email') || '';
+            showLoginPage(pendingEmail);
+        }
+
+        async function completeVerificationCheck() {
+            try {
+                if (auth && auth.currentUser) {
+                    await auth.currentUser.reload();
+                    if (auth.currentUser.emailVerified) {
+                        const email = auth.currentUser.email || localStorage.getItem('gutdigest_pending_verify_email') || '';
+                        localStorage.removeItem('gutdigest_expect_login_after_verify');
+                        localStorage.setItem('gutdigest_pending_verify_email', email);
+                        await auth.signOut();
+                        document.getElementById('verify-screen').style.display = 'none';
+                        document.getElementById('auth-screen').style.display = 'flex';
+                        showLoginPage(email);
+                        alert('Email verified successfully. Please log in to continue.');
+                        return;
+                    }
+                }
+                alert('Verification is not confirmed yet. Open the email link first, then click this button again.');
+            } catch (e) {
+                console.error(e);
+                alert('Unable to confirm verification right now. Please try again.');
+            }
+        }
+
+        function openFeedback() {
+            window.open('https://forms.gle/bHcMYgEVdcmUSHVm8', '_blank', 'noopener');
+        }
+
+function toggleAuthMode() {
+            if (isSignUp) showLoginPage();
+            else showSignupPage();
+        }
+
+        function resendVerification() {
+            if(auth.currentUser) {
+                const btn = document.getElementById('resend-btn');
+                btn.innerText = "Sending...";
+                auth.currentUser.sendEmailVerification().then(() => {
+                    btn.innerText = "Email Resent! Check Spam.";
+                    alert("Email sent!");
+                }).catch(e => { 
+                    alert("Error: " + e.message); 
+                    btn.innerText = "Resend Email"; 
+                });
+            }
+        }
+
+        function handleAuth() {
+            if(!auth) { 
+                alert("Database connection failed. Please refresh the page."); 
+                return; 
+            }
+            
+            const errorDiv = document.getElementById('auth-error'); 
+            errorDiv.innerText = "";
+            
+            if(isSignUp) {
+                const email = document.getElementById('signup-email').value.trim();
+                const password = document.getElementById('signup-password').value;
+                const newProfile = {
+                    email: email, 
+                    fullName: document.getElementById('fullName').value.trim(),
+                    institution: document.getElementById('institution').value.trim(),
+                    course: document.getElementById('course').value.trim(),
+                    level: document.getElementById('level').value,
+                    role: document.getElementById('role').value,
+                    country: document.getElementById('country').value.trim(),
+                    joined: firebase.firestore.FieldValue.serverTimestamp(), 
+                    attempts: 0, 
+                    personalWins: 0, 
+                    personalFails: 0
+                };
+                
+                if(!email || !password || !newProfile.fullName || !newProfile.institution || !newProfile.country) {
+                    errorDiv.innerText = "Please complete all profile fields."; 
+                    return;
+                }
+                
+                auth.createUserWithEmailAndPassword(email, password).then(cred => {
+                    cred.user.sendEmailVerification();
+                    
+                    return db.collection('users').doc(cred.user.uid).set(newProfile)
+                        .then(() => {
+                            userProfile = newProfile;
+                            document.getElementById('verify-email-display').innerText = email;
+                            localStorage.setItem('gutdigest_expect_login_after_verify', '1');
+                            localStorage.setItem('gutdigest_pending_verify_email', email);
+                            document.getElementById('auth-screen').style.display = 'none';
+                            document.getElementById('verify-screen').style.display = 'flex';
+                        });
+                }).catch(e => { 
+                    errorDiv.innerText = e.message; 
+                    alert("Registration Error: " + e.message); 
+                });
+            } else {
+                const email = document.getElementById('login-email').value.trim();
+                const password = document.getElementById('login-password').value;
+                
+                if(!email || !password) { 
+                    errorDiv.innerText = "Enter email and password."; 
+                    return; 
+                }
+                
+                auth.signInWithEmailAndPassword(email, password).then(cred => {
+                    if (!cred.user.emailVerified) {
+                        document.getElementById('verify-email-display').innerText = email;
+                        localStorage.setItem('gutdigest_pending_verify_email', email);
+                        document.getElementById('auth-screen').style.display = 'none';
+                        document.getElementById('verify-screen').style.display = 'flex';
+                    }
+                }).catch(e => { 
+                    errorDiv.innerText = e.message; 
+                    alert("Login Error: " + e.message); 
+                });
+            }
+        }
+
+        // ============================================
+        // GAME DATA
+        // ============================================
+        const STAGES = [
+            {
+                title: "Section 1: Carbohydrate Digestion",
+                desc: "<span style='color:#b71c1c; font-weight:900;'>👆 Tap to select an e-token, then tap a cell to drop it.</span>",
+                footnote: "<strong>Abbreviations:</strong> <em>GLUT</em> = glucose transporter; <em>SGLT</em> = sodium-glucose co-transporter.",
+                rows: [
+                    { name: "Salivary amylase", source: "Salivary glands", class: "Carbohydrase", substrate: "α-1,4 glycosidic bond", site: "Mouth", product: "Maltose, maltotriose, and α-limit dextrins", absorb: "Not directly absorbed" },
+                    { name: "Pancreatic amylase", source: "Pancreas", class: "Carbohydrase", substrate: "α-1,4 glycosidic bond", site: "Duodenum", product: "Maltose, maltotriose, and α-limit dextrins", absorb: "Not directly absorbed" },
+                    { name: "Isomaltase", source: "Enterocytes", class: "α-limit dextrinase", substrate: "α-1,6 glycosidic bond", site: "Small intestine", product: "Glucose", absorb: "SGLT 1 / GLUT 2" },
+                    { name: "Sucrase", source: "Enterocytes", class: "Disaccharidase", substrate: "Sucrose", site: "Jejunum", product: "Glucose + fructose", absorb: "GLUT 5 / GLUT 2" },
+                    { name: "Lactase", source: "Enterocytes", class: "Disaccharidase", substrate: "Lactose", site: "Jejunum", product: "Glucose + galactose", absorb: "SGLT 1 / GLUT 2" },
+                    { name: "Maltase", source: "Enterocytes", class: "Disaccharidase", substrate: "Maltose", site: "Jejunum", product: "Glucose", absorb: "SGLT 1 / GLUT 2" }
+                ],
+                distractors: [ "Stomach", "Triglycerides", "Lipase", "Amino acids", "Pepsin", "Passive diffusion", "PEPT1" ]
+            },
+            {
+                title: "Section 2: Lipid Digestion",
+                desc: "<span style='color:#b71c1c; font-weight:900;'>👆 Tap to select an e-token, then tap a cell to drop it.</span>",
+                footnote: "<strong>Abbreviations:</strong> <em>ABCG</em> = adenosine triphosphate (ATP) binding cassette proteins; <em>FATP</em> = fatty acid transport protein; <em>NPC1L1</em> = Niemann-Pick C1-like 1 protein.",
+                rows: [
+                    { name: "Lingual lipase", source: "Tongue glands", class: "Lipase", substrate: "Triglycerides", site: "Mouth and stomach", product: "Free fatty acids + diglycerides", absorb: "Passive diffusion + FATP" },
+                    { name: "Gastric lipase", source: "Stomach", class: "Lipase", substrate: "Triglycerides", site: "Stomach", product: "Free fatty acids + diglycerides", absorb: "Passive diffusion + FATP" },
+                    { name: "Pancreatic lipase / colipase", source: "Pancreas", class: "Lipase", substrate: "Triglycerides", site: "Duodenum", product: "Free fatty acids + monoglycerides", absorb: "Passive diffusion + FATP" },
+                    { name: "Pancreatic esterase", source: "Pancreas", class: "Lipase", substrate: "Cholesterol esters", site: "Duodenum", product: "Free fatty acids + unesterified cholesterols", absorb: "FATP + NPC1L1-ABCG" },
+                    { name: "Phospholipase", source: "Pancreas", class: "Lipase", substrate: "Phospholipids", site: "Duodenum", product: "Free fatty acids + lysophospholipids", absorb: "Passive diffusion" }
+                ],
+                distractors: [ "Glucose", "SGLT 1", "Maltose", "Peptide bonds", "Salivary glands", "PEPT1" ]
+            },
+            {
+                title: "Section 3: Protein Digestion",
+                desc: "<span style='color:#b71c1c; font-weight:900;'>👆 Tap to select an e-token, then tap a cell to drop it.</span>",
+                footnote: "<strong>Abbreviations:</strong> <em>PEPT1</em> = protein-dependent transporter 1.",
+                rows: [
+                    { name: "Pepsin", source: "Stomach (chief cells)", class: "Endopeptidase", substrate: "Proteins", site: "Stomach", product: "Peptides", absorb: "PEPT1" },
+                    { name: "Trypsin", source: "Pancreas", class: "Endopeptidase", substrate: "Internal peptide bonds", site: "Duodenum", product: "Peptides", absorb: "PEPT1" },
+                    { name: "Chymotrypsin", source: "Pancreas", class: "Endopeptidase", substrate: "Internal peptide bonds", site: "Duodenum", product: "Peptides", absorb: "PEPT1" },
+                    { name: "Elastase", source: "Pancreas", class: "Endopeptidase", substrate: "Internal peptide bonds", site: "Duodenum", product: "Peptides", absorb: "PEPT1" },
+                    { name: "Carboxypeptidase", source: "Pancreas", class: "Exopeptidase", substrate: "Peptide ends", site: "Duodenum", product: "Amino acids", absorb: "Amino acid transporters" },
+                    { name: "Aminopeptidase", source: "Small intestine", class: "Exopeptidase", substrate: "Peptide ends", site: "Duodenum", product: "Amino acids", absorb: "Amino acid transporters" }
+                ],
+                distractors: [ "Fatty acids", "Sucrose", "Mouth", "Micelles", "Alpha-limit dextrins", "SGLT 1", "FATP" ]
+            }
+        ];
+
+        // ============================================
+        // GAME STATE
+        // ============================================
+        let currentStageIdx = 0; 
+        let globalState = {}; 
+        let moveHistory = []; 
+        let draggedItem = null;
+        let dragClone = null; 
+        const palette = ['c1', 'c2', 'c3', 'c4', 'c5']; 
+        let keysPressed = {}; 
+        let selectedChip = null; 
+        let isPointerDown = false; 
+        let isDragging = false; 
+        let startX = 0; 
+        let startY = 0; 
+        let dragThreshold = 5;
+        let shuffleOrder = {};
+        let currentReportData = null;
+        let latestReviewPayload = [];
+        let currentSubmissionId = null;
+        let currentOverallAccuracy = 0;
+        let currentBackendStatus = 'FAILED';
+        let currentFailCount = 0;
+        let currentCanReview = false;
+        const FIELD_LABELS = {
+            source: 'Source',
+            class: 'Class',
+            substrate: 'Substrate',
+            site: 'Major site of action',
+            product: 'End product of digestion',
+            absorb: 'Means of enterocyte absorption'
+        };
+        const TOKEN_COLOR_PALETTES = {
+            multicolor: ['#1b3a8a', '#1b5e20', '#6a1b9a', '#8b1e3f', '#006064'],
+            'high-contrast': ['#111111', '#222222', '#000000', '#1a1a1a', '#333333'],
+            monochrome: ['#111111', '#444444', '#666666', '#888888', '#bbbbbb']
+        };
+
+        function shuffleRows() {
+            const savedShuffle = localStorage.getItem('gutdigest_shuffle_' + sessionId);
+            
+            if(savedShuffle) {
+                shuffleOrder = JSON.parse(savedShuffle);
+                STAGES.forEach((stage, idx) => {
+                    if(shuffleOrder[idx]) {
+                        stage.rows = shuffleOrder[idx].map(i => STAGES[idx].rows[i]);
+                    }
+                });
+            } else {
+                STAGES.forEach((stage, idx) => {
+                    const indices = stage.rows.map((_, i) => i);
+                    
+                    for (let i = indices.length - 1; i > 0; i--) {
+                        const j = Math.floor(Math.random() * (i + 1));
+                        [indices[i], indices[j]] = [indices[j], indices[i]];
+                    }
+                    
+                    shuffleOrder[idx] = indices;
+                    stage.rows = indices.map(i => stage.rows[i]);
+                });
+                
+                localStorage.setItem('gutdigest_shuffle_' + sessionId, JSON.stringify(shuffleOrder));
+            }
+        }
+
+        function initGame() {
+            const saved = localStorage.getItem('gutdigest_save_' + sessionId);
+            if(saved) {
+                try {
+                    globalState = JSON.parse(saved);
+                } catch(e) {
+                    console.error("Failed to parse saved state:", e);
+                    globalState = {};
+                }
+            }
+            
+            shuffleRows();
+            renderNavigation(); 
+            loadStage(0);
+            applyTokenColors(); 
+            setupBoardEnhancements();
+            
+            document.addEventListener('keydown', handleKeyDown); 
+            document.addEventListener('keyup', handleKeyUp);
+            
+            initChipInteractions();
+        }
+
+        function initLiveStats() {
+            if(!db || !auth.currentUser) return; 
+            
+            db.collection('users').onSnapshot(snapshot => {
+                let totalResearchers = snapshot.size; 
+                let totalPasses = 0; 
+                let totalFails = 0;
+                
+                snapshot.forEach(doc => { 
+                    const data = doc.data(); 
+                    totalPasses += (data.personalWins || 0); 
+                    totalFails += (data.personalFails || 0); 
+                });
+                
+                document.getElementById('global-players').innerText = totalResearchers;
+                document.getElementById('global-passes').innerText = totalPasses;
+                document.getElementById('global-fails').innerText = totalFails;
+            }, error => { 
+                console.error("Stats error:", error); 
+            });
+        }
+
+        function renderNavigation() {
+            const nav = document.getElementById('nav-tabs'); 
+            nav.innerHTML = '';
+            
+            STAGES.forEach((stage, idx) => {
+                const tab = document.createElement('div');
+                tab.className = `nav-tab ${idx === 0 ? 'active' : ''}`;
+                tab.id = `tab-${idx}`;
+                tab.innerText = `SECTION ${idx + 1}`;
+                tab.onclick = () => switchStage(idx);
+                nav.appendChild(tab);
+            });
+            
+            checkGlobalSubmissionStatus();
+        }
+
+        function switchStage(newIdx) {
+            saveCurrentStageState();
+            document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+            document.getElementById(`tab-${newIdx}`).classList.add('active');
+            loadStage(newIdx);
+        }
+
+        function saveCurrentStageState() {
+            const zones = document.querySelectorAll('.drop-zone');
+            if (!globalState[currentStageIdx]) globalState[currentStageIdx] = {};
+            
+            zones.forEach(zone => {
+                const key = zone.id;
+                if (zone.children.length > 0) {
+                    globalState[currentStageIdx][key] = zone.children[0].innerText;
+                } else {
+                    delete globalState[currentStageIdx][key];
+                }
+            });
+
+            localStorage.setItem('gutdigest_save_' + sessionId, JSON.stringify(globalState));
+            
+            const filledCount = Object.keys(globalState[currentStageIdx]).length;
+            const tab = document.getElementById(`tab-${currentStageIdx}`);
+            const totalSlots = STAGES[currentStageIdx].rows.length * 6;
+            
+            if (filledCount === totalSlots) tab.classList.add('filled');
+            else tab.classList.remove('filled');
+            
+            checkGlobalSubmissionStatus();
+        }
+
+        function updateZoneVisuals() {
+            document.querySelectorAll('.drop-zone').forEach(zone => {
+                if (zone.children.length > 0) zone.classList.add('filled');
+                else zone.classList.remove('filled');
+            });
+        }
+
+        function clearCurrentStage() {
+            const zones = document.querySelectorAll('.drop-zone');
+            zones.forEach(zone => { 
+                if (zone.children.length > 0) { 
+                    const tile = zone.children[0]; 
+                    document.getElementById('pool').appendChild(tile); 
+                } 
+            });
+            
+            globalState[currentStageIdx] = {}; 
+            saveCurrentStageState(); 
+            updateZoneVisuals(); 
+            playClick();
+        }
+
+        function loadStage(idx) {
+            currentStageIdx = idx; 
+            const stageData = STAGES[idx];
+            
+            document.getElementById('stage-title').innerText = stageData.title;
+            document.getElementById('stage-desc').innerHTML = stageData.desc;
+            
+            const tbody = document.getElementById('table-body');
+            tbody.innerHTML = '';
+            const pool = document.getElementById('pool');
+            pool.innerHTML = '';
+            
+            let allAnswers = [];
+            
+            stageData.rows.forEach((row, rIndex) => {
+                const tr = document.createElement('tr');
+                
+                const tdName = document.createElement('td');
+                tdName.className = 'col-enzyme';
+                tdName.innerText = row.name;
+                tr.appendChild(tdName);
+
+                const fields = ['source', 'class', 'substrate', 'site', 'product', 'absorb'];
+                const colClasses = ['col-source', 'col-class', 'col-substrate', 'col-site', 'col-product', 'col-absorb'];
+                
+                fields.forEach((field, cIndex) => {
+                    const td = document.createElement('td');
+                    td.className = colClasses[cIndex];
+                    
+                    const zone = document.createElement('div');
+                    zone.className = 'drop-zone';
+                    zone.id = `zone-${row.name.replace(/\s+/g, '-').replace(/[()]/g, '')}-${field}`; 
+                    
+                    if (globalState[idx] && globalState[idx][zone.id]) {
+                        zone.appendChild(createChip(globalState[idx][zone.id]));
+                        zone.classList.add('filled');
+                    }
+                    
+                    td.appendChild(zone);
+                    tr.appendChild(td);
+                    
+                    allAnswers.push(row[field]);
+                });
+                
+                tbody.appendChild(tr);
+            });
+            
+            let fullPool = [...allAnswers, ...stageData.distractors];
+            
+            const placed = Object.values(globalState[idx] || {});
+            placed.forEach(p => {
+                const idx = fullPool.indexOf(p);
+                if (idx > -1) fullPool.splice(idx, 1);
+            });
+            
+            shuffleArray(fullPool);
+            fullPool.forEach(text => { pool.appendChild(createChip(text)); });
+            
+            document.getElementById('stage-footnote').innerHTML = stageData.footnote;
+            applyTokenColors();
+            setupBoardEnhancements();
+            
+            initChipInteractions();
+        }
+
+
+        let boardEnhancementsReady = false;
+        function setupBoardEnhancements() {
+            const wrapper = document.getElementById('table-wrapper');
+            const table = document.getElementById('game-table');
+            const topScroll = document.getElementById('board-scroll-top');
+            const topInner = document.getElementById('board-scroll-top-inner');
+            if (!wrapper || !table || !topScroll || !topInner) return;
+
+            const syncTopWidth = () => {
+                topInner.style.width = `${Math.max(table.scrollWidth, table.offsetWidth)}px`;
+                topScroll.scrollLeft = wrapper.scrollLeft;
+            };
+
+            if (!boardEnhancementsReady) {
+                let syncingFromTop = false;
+                let syncingFromWrapper = false;
+
+                topScroll.addEventListener('scroll', () => {
+                    if (syncingFromWrapper) return;
+                    syncingFromTop = true;
+                    wrapper.scrollLeft = topScroll.scrollLeft;
+                    syncingFromTop = false;
+                });
+
+                wrapper.addEventListener('scroll', () => {
+                    if (syncingFromTop) return;
+                    syncingFromWrapper = true;
+                    topScroll.scrollLeft = wrapper.scrollLeft;
+                    syncingFromWrapper = false;
+                });
+
+                wrapper.addEventListener('click', (event) => {
+                    const interactive = event.target.closest('.chip, .drop-zone, button, input, select, textarea, a, label');
+                    if (!interactive) {
+                        wrapper.focus({ preventScroll: true });
+                    }
+                });
+
+                wrapper.addEventListener('keydown', (event) => {
+                    const step = event.shiftKey ? 220 : 90;
+                    if (['ArrowDown','ArrowUp','PageDown','PageUp','Home','End'].includes(event.key)) {
+                        event.preventDefault();
+                    }
+                    if (event.key === 'ArrowDown') wrapper.scrollBy({ top: step, behavior: 'smooth' });
+                    if (event.key === 'ArrowUp') wrapper.scrollBy({ top: -step, behavior: 'smooth' });
+                    if (event.key === 'PageDown') wrapper.scrollBy({ top: wrapper.clientHeight * 0.85, behavior: 'smooth' });
+                    if (event.key === 'PageUp') wrapper.scrollBy({ top: -wrapper.clientHeight * 0.85, behavior: 'smooth' });
+                    if (event.key === 'Home') wrapper.scrollTo({ top: 0, behavior: 'smooth' });
+                    if (event.key === 'End') wrapper.scrollTo({ top: wrapper.scrollHeight, behavior: 'smooth' });
+                });
+
+                window.addEventListener('resize', syncTopWidth);
+                boardEnhancementsReady = true;
+            }
+
+            syncTopWidth();
+            requestAnimationFrame(syncTopWidth);
+            setTimeout(syncTopWidth, 60);
+        }
+
+        function initChipInteractions() {
+            document.querySelectorAll('.chip').forEach(chip => {
+                chip.onclick = null;
+                chip.onpointerdown = null;
+            });
+            
+            document.querySelectorAll('.drop-zone').forEach(zone => {
+                zone.onclick = null;
+                zone.onpointerdown = null;
+            });
+            
+            document.querySelectorAll('.inventory-pool .chip').forEach(chip => {
+                chip.onclick = (e) => {
+                    e.stopPropagation();
+                    handleChipClick(chip);
+                };
+                chip.onpointerdown = (e) => {
+                    if (e.button === 0) {
+                        handleDragStart(e, chip);
+                    }
+                };
+            });
+            
+            document.querySelectorAll('.drop-zone .chip').forEach(chip => {
+                chip.onclick = (e) => {
+                    e.stopPropagation();
+                    handleChipClick(chip);
+                };
+                chip.onpointerdown = (e) => {
+                    if (e.button === 0) {
+                        handleDragStart(e, chip);
+                    }
+                };
+            });
+            
+            document.querySelectorAll('.drop-zone').forEach(zone => {
+                zone.onclick = (e) => {
+                    e.stopPropagation();
+                    handleZoneClick(zone);
+                };
+            });
+            
+            const pool = document.getElementById('pool');
+            if(pool) {
+                pool.onclick = (e) => {
+                    if(e.target === pool || e.target.classList.contains('inventory-pool')) {
+                        if(selectedChip) {
+                            playClick();
+                            const wasInZone = selectedChip.parentElement && selectedChip.parentElement.classList.contains('drop-zone');
+                            
+                            const newChip = createChip(selectedChip.innerText);
+                            pool.appendChild(newChip);
+                            initChipInteractions();
+                            
+                            if(wasInZone) {
+                                selectedChip.remove();
+                            }
+                            
+                            selectedChip.classList.remove('selected');
+                            selectedChip = null;
+                            saveCurrentStageState();
+                            updateZoneVisuals();
+                        }
+                    }
+                };
+            }
+            applyTokenColors();
+        }
+
+        function createChip(text) {
+            const chip = document.createElement('div');
+            chip.className = 'chip';
+            chip.innerText = text;
+            chip.dataset.text = text;
+            chip.dataset.tokenRole = 'etoken';
+            
+            chip.onclick = (e) => {
+                e.stopPropagation();
+                handleChipClick(chip);
+            };
+            
+            chip.onpointerdown = (e) => {
+                if (e.button === 0) {
+                    handleDragStart(e, chip);
+                }
+            };
+            
+            styleChipElement(chip);
+            return chip;
+        }
+
+        function getPreferredSingleColor() {
+            const picker = document.getElementById('single-token-color');
+            return picker ? picker.value : '#1f40ef';
+        }
+
+        function getTokenColorMode() {
+            const select = document.getElementById('token-color-mode');
+            return select ? select.value : 'multicolor';
+        }
+
+        function getContrastTextColor(hex) {
+            const value = (hex || '#1f40ef').replace('#', '');
+            const safe = value.length === 3 ? value.split('').map(c => c + c).join('') : value;
+            const r = parseInt(safe.substring(0, 2), 16);
+            const g = parseInt(safe.substring(2, 4), 16);
+            const b = parseInt(safe.substring(4, 6), 16);
+            const yiq = ((r * 299) + (g * 587) + (b * 114)) / 1000;
+            return yiq >= 160 ? '#111111' : '#ffffff';
+        }
+
+        function styleChipElement(chip, index = 0) {
+            if (!chip || chip.closest('.drop-zone')) return;
+            const mode = getTokenColorMode();
+            let bg = '#1b3a8a';
+            if (mode === 'single') {
+                bg = getPreferredSingleColor();
+            } else {
+                const palette = TOKEN_COLOR_PALETTES[mode] || TOKEN_COLOR_PALETTES.multicolor;
+                bg = palette[index % palette.length];
+            }
+            const textColor = getContrastTextColor(bg);
+            chip.style.background = bg;
+            chip.style.color = textColor;
+            chip.style.textShadow = textColor === '#ffffff' ? '0 1px 2px rgba(0,0,0,0.8)' : 'none';
+            chip.style.border = mode === 'high-contrast' ? '2px solid #ffe57f' : '1px solid rgba(255,255,255,0.4)';
+            chip.style.boxShadow = mode === 'high-contrast' ? '0 0 0 1px #000, 0 3px 5px rgba(0,0,0,0.5)' : '0 3px 5px rgba(0,0,0,0.4)';
+        }
+
+        function applyTokenColors() {
+            document.querySelectorAll('.inventory-pool .chip').forEach((chip, index) => styleChipElement(chip, index));
+        }
+
+        function updateTokenModeHelp(mode) {
+            const help = document.getElementById('inventory-help-text');
+            if (!help) return;
+            const messages = {
+                'multicolor': 'Multicolor helps players separate many e-tokens quickly using varied shades.',
+                'high-contrast': 'High contrast makes e-tokens easier to distinguish with stronger separation and clearer edges.',
+                'monochrome': 'Black and white removes color dependence and is useful for players who prefer a neutral view.',
+                'single': 'Single color keeps every e-token in one chosen shade for a calmer, more uniform screen.'
+            };
+            help.innerText = messages[mode] || messages.multicolor;
+        }
+
+        function handleTokenColorModeChange() {
+            const mode = getTokenColorMode();
+            const wrap = document.getElementById('single-color-wrap');
+            if (wrap) wrap.style.display = mode === 'single' ? 'block' : 'none';
+            updateTokenModeHelp(mode);
+            applyTokenColors();
+        }
+
+        function shuffleArray(array) { 
+            for (let i = array.length - 1; i > 0; i--) { 
+                const j = Math.floor(Math.random() * (i + 1)); 
+                [array[i], array[j]] = [array[j], array[i]]; 
+            } 
+        }
+
+        function recordMove(slotId, text) { 
+            moveHistory.push({ stage: currentStageIdx, slot: slotId, text: text }); 
+        }
+        
+        function handleDragStart(e, chip) { 
+            if (e.button !== 0) return;
+            
+            draggedItem = chip; 
+            isPointerDown = true; 
+            isDragging = false; 
+            startX = e.clientX; 
+            startY = e.clientY; 
+            
+            document.addEventListener('pointermove', handleDragMove); 
+            document.addEventListener('pointerup', handleDragEnd); 
+        }
+        
+        function handleDragMove(e) { 
+            if (!isPointerDown) return; 
+            
+            const dx = e.clientX - startX; 
+            const dy = e.clientY - startY; 
+            const distance = Math.sqrt(dx*dx + dy*dy); 
+            
+            if (distance > dragThreshold) { 
+                isDragging = true; 
+                e.preventDefault(); 
+                
+                if (!dragClone) { 
+                    dragClone = draggedItem.cloneNode(true); 
+                    dragClone.classList.add('drag-clone'); 
+                    document.body.appendChild(dragClone); 
+                    draggedItem.style.opacity = '0.3'; 
+                } 
+                
+                moveClone(e.clientX, e.clientY); 
+                dragClone.style.display = 'none'; 
+                const el = document.elementFromPoint(e.clientX, e.clientY); 
+                dragClone.style.display = 'flex'; 
+                
+                document.querySelectorAll('.drop-zone').forEach(z => z.classList.remove('hover-target')); 
+                const zone = el ? el.closest('.drop-zone') : null; 
+                if (zone) zone.classList.add('hover-target'); 
+            } 
+        }
+        
+        function handleDragEnd(e) { 
+            document.removeEventListener('pointermove', handleDragMove); 
+            document.removeEventListener('pointerup', handleDragEnd); 
+            isPointerDown = false; 
+            
+            if (isDragging) { 
+                if (dragClone) dragClone.remove(); 
+                dragClone = null; 
+                draggedItem.style.opacity = '1'; 
+                
+                const el = document.elementFromPoint(e.clientX, e.clientY); 
+                const zone = el ? el.closest('.drop-zone') : null; 
+                const poolArea = el ? el.closest('.inventory-pool') : null; 
+                
+                const wasInZone = draggedItem.parentElement && draggedItem.parentElement.classList.contains('drop-zone');
+                
+                if (zone) { 
+                    playThud(); 
+                    
+                    if (zone.children.length > 0 && zone.children[0] !== draggedItem) { 
+                        const existing = zone.children[0]; 
+                        document.getElementById('pool').appendChild(existing); 
+                        initChipInteractions();
+                    } 
+                    
+                    zone.appendChild(draggedItem); 
+                    recordMove(zone.id, draggedItem.innerText); 
+                    
+                    initChipInteractions();
+                } else if (poolArea) { 
+                    playClick(); 
+                    
+                    const newChip = createChip(draggedItem.innerText);
+                    document.getElementById('pool').appendChild(newChip); 
+                    
+                    if(wasInZone) {
+                        draggedItem.remove();
+                    } else {
+                        draggedItem.remove();
+                    }
+                    
+                    initChipInteractions();
+                } else {
+                    if(!wasInZone) {
+                        document.getElementById('pool').appendChild(draggedItem);
+                        initChipInteractions();
+                    }
+                }
+                
+                document.querySelectorAll('.drop-zone').forEach(z => z.classList.remove('hover-target')); 
+                saveCurrentStageState(); 
+                updateZoneVisuals();
+            } 
+            
+            draggedItem = null; 
+        }
+        
+        function handleChipClick(chip) { 
+            if (selectedChip === chip) { 
+                chip.classList.remove('selected'); 
+                selectedChip = null; 
+            } else { 
+                if(selectedChip) selectedChip.classList.remove('selected'); 
+                selectedChip = chip; 
+                chip.classList.add('selected'); 
+                playClick(); 
+            } 
+        }
+        
+        function handleZoneClick(zone) { 
+            if (selectedChip) {
+                const wasInZone = selectedChip.parentElement && selectedChip.parentElement.classList.contains('drop-zone');
+                
+                if (zone.children.length > 0) { 
+                    const existing = zone.children[0]; 
+                    const newChip = createChip(existing.innerText);
+                    document.getElementById('pool').appendChild(newChip); 
+                    existing.remove();
+                } 
+                
+                if(wasInZone) {
+                    const freshChip = createChip(selectedChip.innerText);
+                    zone.appendChild(freshChip);
+                    selectedChip.remove();
+                } else {
+                    zone.appendChild(selectedChip); 
+                }
+                
+                recordMove(zone.id, selectedChip.innerText); 
+                selectedChip.classList.remove('selected'); 
+                selectedChip = null; 
+                playThud(); 
+                
+                initChipInteractions();
+                saveCurrentStageState(); 
+                updateZoneVisuals();
+            } 
+        }
+        
+        function moveClone(x, y) { 
+            if (dragClone) { 
+                dragClone.style.left = (x - 75) + 'px'; 
+                dragClone.style.top = (y - 30) + 'px'; 
+            } 
+        }
+        
+        function handleKeyDown(e) { 
+            keysPressed[e.key.toLowerCase()] = true; 
+            
+            if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') { 
+                e.preventDefault(); 
+                undoLastMove(); 
+            } 
+            
+            if (keysPressed['a'] && keysPressed['d']) { 
+                document.getElementById('admin-btn-visible').classList.add('admin-mode');
+            }
+            
+            if (keysPressed['a'] && keysPressed['b'] && keysPressed['c']) { 
+                triggerDevAutoFill(); 
+            } 
+        }
+        
+        function handleKeyUp(e) { 
+            keysPressed[e.key.toLowerCase()] = false; 
+        }
+        
+        function undoLastMove() { 
+            if (moveHistory.length === 0) return; 
+            
+            const lastMove = moveHistory.pop(); 
+            if (lastMove.stage !== currentStageIdx) { 
+                switchStage(lastMove.stage); 
+            } 
+            
+            const zone = document.getElementById(lastMove.slot); 
+            if (zone && zone.children.length > 0) { 
+                const tile = zone.children[0]; 
+                document.getElementById('pool').appendChild(tile); 
+                playClick(); 
+                initChipInteractions();
+                saveCurrentStageState(); 
+                updateZoneVisuals();
+            } 
+        }
+        
+        function triggerDevAutoFill() { 
+            const stageData = STAGES[currentStageIdx]; 
+            if (!globalState[currentStageIdx]) globalState[currentStageIdx] = {}; 
+            
+            stageData.rows.forEach((row, rIndex) => {
+                const fields = ['source', 'class', 'substrate', 'site', 'product', 'absorb'];
+                fields.forEach(field => {
+                    const zoneId = `zone-${row.name.replace(/\s+/g, '-').replace(/[()]/g, '')}-${field}`;
+                    globalState[currentStageIdx][zoneId] = row[field];
+                });
+            });
+            
+            playFanfare(); 
+            loadStage(currentStageIdx); 
+            saveCurrentStageState(); 
+            keysPressed = {}; 
+        }
+
+        const AudioCtx = window.AudioContext || window.webkitAudioContext; 
+        let audioCtx = null;
+        
+        function initAudio() {
+            if(!audioCtx) {
+                audioCtx = new AudioCtx();
+            }
+        }
+        
+        function playThud() { 
+            initAudio();
+            if (audioCtx.state === 'suspended') audioCtx.resume(); 
+            const osc = audioCtx.createOscillator(); 
+            const gain = audioCtx.createGain(); 
+            osc.connect(gain); 
+            gain.connect(audioCtx.destination); 
+            osc.type = 'square'; 
+            osc.frequency.setValueAtTime(80, audioCtx.currentTime); 
+            osc.frequency.exponentialRampToValueAtTime(30, audioCtx.currentTime + 0.1); 
+            gain.gain.setValueAtTime(0.5, audioCtx.currentTime); 
+            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1); 
+            osc.start(); 
+            osc.stop(audioCtx.currentTime + 0.1); 
+        }
+        
+        function playClick() { 
+            initAudio();
+            if (audioCtx.state === 'suspended') audioCtx.resume(); 
+            const osc = audioCtx.createOscillator(); 
+            const gain = audioCtx.createGain(); 
+            osc.connect(gain); 
+            gain.connect(audioCtx.destination); 
+            osc.type = 'sine'; 
+            osc.frequency.setValueAtTime(800, audioCtx.currentTime); 
+            gain.gain.setValueAtTime(0.2, audioCtx.currentTime); 
+            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.08); 
+            osc.start(); 
+            osc.stop(audioCtx.currentTime + 0.08); 
+        }
+        
+        function playFanfare() { 
+            initAudio();
+            if (audioCtx.state === 'suspended') audioCtx.resume(); 
+            [523.25, 659.25, 783.99, 1046.50].forEach((f, i) => { 
+                setTimeout(() => { 
+                    const osc = audioCtx.createOscillator(); 
+                    const gain = audioCtx.createGain(); 
+                    osc.connect(gain); 
+                    gain.connect(audioCtx.destination); 
+                    osc.type = 'triangle'; 
+                    osc.frequency.setValueAtTime(f, audioCtx.currentTime); 
+                    gain.gain.setValueAtTime(0.3, audioCtx.currentTime); 
+                    gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.5); 
+                    osc.start(); 
+                    osc.stop(audioCtx.currentTime + 0.5); 
+                }, i * 100); 
+            }); 
+        }
+
+        function formatDateTime(value) {
+            if (!value) return 'N/A';
+            try {
+                const date = value.toDate ? value.toDate() : new Date(value);
+                return date.toLocaleString();
+            } catch (e) {
+                return value;
+            }
+        }
+
+        function buildHintOptions(stage, field, correctValue) {
+            const options = [];
+            const seen = new Set();
+            stage.rows.forEach(row => {
+                const value = row[field];
+                if (value && !seen.has(value)) {
+                    seen.add(value);
+                    options.push(value);
+                }
+            });
+            if (!seen.has(correctValue)) options.unshift(correctValue);
+            if (options.length > 4) {
+                return [correctValue, ...options.filter(v => v !== correctValue).slice(0, 3)];
+            }
+            return options;
+        }
+
+        function buildReviewPayload() {
+            const payload = [];
+            STAGES.forEach((stage, idx) => {
+                const userAnswers = globalState[idx] || {};
+                stage.rows.forEach((row) => {
+                    ['source', 'class', 'substrate', 'site', 'product', 'absorb'].forEach(field => {
+                        const zoneId = `zone-${row.name.replace(/\s+/g, '-').replace(/[()]/g, '')}-${field}`;
+                        const selected = userAnswers[zoneId] || 'No e-token placed';
+                        const correct = row[field];
+                        payload.push({
+                            section: stage.title,
+                            enzyme: row.name,
+                            field,
+                            label: FIELD_LABELS[field],
+                            selected,
+                            correct,
+                            isCorrect: selected === correct,
+                            options: buildHintOptions(stage, field, correct)
+                        });
+                    });
+                });
+            });
+            return payload;
+        }
+
+        function renderHintOptions(item) {
+            const body = document.getElementById('hint-panel-body');
+            if (!body) return;
+            body.innerHTML = `
+                <p style="margin-top:0; font-weight:900; color:#ffe57f;">${item.section}</p>
+                <p style="font-weight:800;">${item.enzyme} · ${item.label}</p>
+                <p style="line-height:1.45; color:#d7dce8;">Possible correct answers for this cell are shown below. The best match is highlighted.</p>
+            `;
+            item.options.forEach(option => {
+                const div = document.createElement('div');
+                div.className = 'hint-choice glow';
+                if (option === item.correct) div.classList.add('correct-option');
+                div.textContent = option;
+                body.appendChild(div);
+            });
+        }
+
+        function renderTileReview(payload) {
+            const container = document.getElementById('review-board-container');
+            const hintPanel = document.getElementById('hint-panel-body');
+            if (!container) return;
+            container.innerHTML = '';
+            if (hintPanel) {
+                hintPanel.innerHTML = '<p style="margin-top:0; line-height:1.5;">Green cells show the e-tokens you placed correctly. Red cells show the e-tokens you missed or placed wrongly. This review is read-only and does not reveal the correct solution.</p>';
+            }
+            const fields = ['source', 'class', 'substrate', 'site', 'product', 'absorb'];
+            const grouped = {};
+            payload.forEach(item => {
+                const sectionKey = item.section || 'Section';
+                if (!grouped[sectionKey]) grouped[sectionKey] = {};
+                if (!grouped[sectionKey][item.enzyme]) grouped[sectionKey][item.enzyme] = {};
+                grouped[sectionKey][item.enzyme][item.field] = item;
+            });
+
+            Object.entries(grouped).forEach(([sectionName, enzymeMap]) => {
+                const card = document.createElement('div');
+                card.className = 'review-section-card';
+                const title = document.createElement('div');
+                title.className = 'review-section-title';
+                title.textContent = sectionName;
+                card.appendChild(title);
+
+                const wrap = document.createElement('div');
+                wrap.className = 'review-section-wrap';
+                const table = document.createElement('table');
+                table.className = 'review-board-table';
+                table.innerHTML = `<thead><tr><th>Enzyme</th>${fields.map(field => `<th>${FIELD_LABELS[field]}</th>`).join('')}</tr></thead>`;
+                const tbody = document.createElement('tbody');
+
+                Object.entries(enzymeMap).forEach(([enzyme, fieldMap]) => {
+                    const tr = document.createElement('tr');
+                    const enzymeTd = document.createElement('td');
+                    enzymeTd.className = 'review-enzyme-cell';
+                    enzymeTd.textContent = enzyme;
+                    tr.appendChild(enzymeTd);
+
+                    fields.forEach(field => {
+                        const item = fieldMap[field] || null;
+                        const td = document.createElement('td');
+                        td.className = 'review-answer-cell';
+                        const selectedText = item && item.selected && item.selected !== 'No e-token placed' ? item.selected : 'No e-token placed';
+                        if (!item || !item.selected || item.selected === 'No e-token placed') td.classList.add('empty', 'wrong');
+                        else if (item.isCorrect) td.classList.add('correct');
+                        else td.classList.add('wrong');
+                        const icon = (item && item.isCorrect) ? '✓' : '✕';
+                        td.innerHTML = `<div class="status-icon">${icon}</div><div style="font-weight:800; line-height:1.35;">${selectedText}</div><div class="review-answer-status">${(item && item.isCorrect) ? 'Correct' : 'Missed / Wrong'}</div>`;
+                        tr.appendChild(td);
+                    });
+                    tbody.appendChild(tr);
+                });
+                table.appendChild(tbody);
+                wrap.appendChild(table);
+                card.appendChild(wrap);
+                container.appendChild(card);
+            });
+        }
+
+        function getReviewLockKey(submissionId) {
+            return `gutdigest_review_used_${submissionId}`;
+        }
+
+        function canOpenReview(submissionId) {
+            return submissionId && !localStorage.getItem(getReviewLockKey(submissionId));
+        }
+
+        function isReviewUnlockFailureCount(failCount) {
+            const n = Number(failCount || 0);
+            return n >= 3 && n % 3 === 0;
+        }
+
+        function updateReviewButtonVisibility(isEligible) {
+            const btn = document.getElementById('review-session-btn');
+            const note = document.getElementById('review-lock-note');
+            if (!btn) return;
+            btn.style.display = 'inline-block';
+            const unlockNow = Boolean(isEligible) && isReviewUnlockFailureCount(currentFailCount);
+            currentCanReview = unlockNow && canOpenReview(currentSubmissionId);
+            btn.disabled = !currentCanReview;
+            btn.style.opacity = currentCanReview ? '1' : '0.55';
+            btn.style.cursor = currentCanReview ? 'pointer' : 'not-allowed';
+            btn.classList.toggle('review-unlocked', currentCanReview);
+            const reviewUsed = unlockNow && !canOpenReview(currentSubmissionId);
+            btn.textContent = currentCanReview
+                ? 'REVIEW MISTAKES'
+                : (reviewUsed ? 'REVIEW MISTAKES (ALREADY USED)' : 'REVIEW MISTAKES (UNLOCKS ON EVERY 3RD FAIL)');
+            if (note) {
+                note.innerText = currentCanReview
+                    ? 'Unlocked now. This one-time review shows only the choices you got right and the ones you missed.'
+                    : (reviewUsed
+                        ? 'This one-time review has already been used for this score card in this browser.'
+                        : 'Review unlocks only on every third failed attempt: 3, 6, 9, and so on.');
+            }
+        }
+
+        function openTileReview() {
+            if (!currentSubmissionId) {
+                alert('This score card is not ready for review yet.');
+                return;
+            }
+            if (!currentCanReview) {
+                alert(isReviewUnlockFailureCount(currentFailCount) ? 'This review has already been used for this score card in this browser.' : 'Review mistakes unlock only on every third failed attempt.');
+                return;
+            }
+            renderTileReview(latestReviewPayload || []);
+            document.getElementById('tile-review-modal').style.display = 'flex';
+            localStorage.setItem(getReviewLockKey(currentSubmissionId), 'used');
+            currentCanReview = false;
+            updateReviewButtonVisibility(false);
+        }
+
+        function closeTileReview() {
+            document.getElementById('tile-review-modal').style.display = 'none';
+        }
+
+        async function openHistoryModal() {
+            if (!currentUser || !db) {
+                alert('Please log in to view game history.');
+                return;
+            }
+            const container = document.getElementById('history-list');
+            container.innerHTML = '<div class="history-item"><div>Loading history...</div></div>';
+            document.getElementById('history-modal').style.display = 'flex';
+            try {
+                const snapshot = await db.collection('submissions').where('userId', '==', currentUser.uid).get();
+                const items = [];
+                snapshot.forEach(doc => items.push({ id: doc.id, ...doc.data() }));
+                items.sort((a, b) => new Date(b.timestamp || 0) - new Date(a.timestamp || 0));
+                if (!items.length) {
+                    container.innerHTML = '<div class="history-item"><div>No previous attempts found yet.</div></div>';
+                    return;
+                }
+                container.innerHTML = '';
+                items.forEach((item, index) => {
+                    const accuracy = Number(item.overallAccuracy || 0).toFixed(1);
+                    const div = document.createElement('div');
+                    div.className = 'history-item';
+                    div.innerHTML = `
+                        <div class="history-meta">
+                            <div><strong>Attempt</strong><span>${index + 1}</span></div>
+                            <div><strong>Date</strong><span>${formatDateTime(item.timestamp)}</span></div>
+                            <div><strong>Accuracy</strong><span>${accuracy}%</span></div>
+                            
+                        </div>
+                        <button class="history-action-btn" onclick="loadSubmissionScorecard('${item.id}')">OPEN SCORE CARD</button>
+                    `;
+                    container.appendChild(div);
+                });
+            } catch (error) {
+                console.error(error);
+                container.innerHTML = `<div class="history-item"><div>Unable to load history: ${error.message}</div></div>`;
+            }
+        }
+
+        function closeHistoryModal() {
+            document.getElementById('history-modal').style.display = 'none';
+        }
+
+        function setDynamicYears() {
+            const year = new Date().getFullYear();
+            document.querySelectorAll('.current-year').forEach(el => {
+                el.textContent = year;
+            });
+        }
+
+        function downloadResultPdf() {
+            const reportCard = document.querySelector('#report-modal .report-card');
+            if (!reportCard) {
+                alert('Score card is not available to download yet.');
+                return;
+            }
+
+            const printWindow = window.open('', '_blank', 'width=980,height=1200');
+            if (!printWindow) {
+                alert('Please allow popups to download the score card.');
+                return;
+            }
+
+            const clonedReport = reportCard.cloneNode(true);
+            clonedReport.style.maxHeight = 'none';
+            clonedReport.style.height = 'auto';
+            clonedReport.style.overflow = 'visible';
+            clonedReport.style.maxWidth = '100%';
+            clonedReport.style.width = '100%';
+            clonedReport.querySelectorAll('button').forEach(btn => btn.remove());
+            const canvases = clonedReport.querySelectorAll('canvas');
+            canvases.forEach(canvas => canvas.remove());
+
+            printWindow.document.open();
+            printWindow.document.write(`<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>GutDigest Score Card</title>
+<style>
+    @page { size: A4; margin: 12mm; }
+    * { box-sizing: border-box; }
+    body { font-family: Arial, Helvetica, sans-serif; margin: 0; color: #000; background: #fff; }
+    .report-card { background: #fff !important; color: #000 !important; border: 2px solid #000 !important; box-shadow: none !important; display:block !important; }
+    .report-header { background: #1a0f0a !important; color: #d4af37 !important; padding: 16px !important; text-align: center; font-weight: 900; }
+    .scorecard-brand { display:flex !important; align-items:center !important; justify-content:center !important; gap:12px !important; margin-bottom:8px !important; flex-wrap:wrap !important; }
+    .scorecard-logo { width:50px !important; height:50px !important; border-radius:12px !important; display:flex !important; align-items:center !important; justify-content:center !important; background: #d4af37 !important; color:#1a0f0a !important; font-family: Georgia, serif !important; font-size: 20px !important; font-weight: 900 !important; border:1px solid #f5e0a2 !important; }
+    .scorecard-brand-name { font-size: 24px !important; font-weight: 900 !important; line-height:1.05 !important; }
+    .scorecard-brand-tag { font-size: 11px !important; text-transform: uppercase !important; letter-spacing: 1px !important; color: #f4e3af !important; margin-top:3px !important; }
+    .scorecard-title { font-size: 14px !important; letter-spacing: 1.2px !important; }
+    .report-content { padding: 18px !important; }
+    .report-table { width: 100%; border-collapse: collapse; margin-bottom: 18px; }
+    .report-table th, .report-table td { border: 1px solid #222; padding: 8px; text-align: left; vertical-align: top; }
+    .report-table th { background: #ececec; }
+    .report-summary-box, .backend-note, .verification-code, .verification-url, .qr-verification-section, .report-user-details-grid > div { page-break-inside: avoid; }
+    .report-user-details-grid { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 10px; margin-bottom: 18px; }
+    .report-user-details-grid > div { border: 1px solid #ccc; padding: 8px; background: #fafafa; }
+    #qr-code-container { display: flex; justify-content: center; margin: 12px 0; }
+    #qr-code-container canvas, #qr-code-container img { max-width: 180px; height: auto; }
+    .watermark-text { color: #333 !important; margin-top: 12px; font-size: 12px; }
+</style>
+</head>
+<body></body>
+</html>`);
+            printWindow.document.close();
+            printWindow.document.body.appendChild(clonedReport);
+
+            const qrSource = document.querySelector('#report-modal #qr-code-container canvas, #report-modal #qr-code-container img');
+            const qrTarget = printWindow.document.querySelector('#qr-code-container');
+            if (qrSource && qrTarget) {
+                if (qrSource.tagName === 'CANVAS') {
+                    const img = printWindow.document.createElement('img');
+                    img.src = qrSource.toDataURL('image/png');
+                    img.alt = 'Verification QR Code';
+                    qrTarget.innerHTML = '';
+                    qrTarget.appendChild(img);
+                } else {
+                    const img = printWindow.document.createElement('img');
+                    img.src = qrSource.src;
+                    img.alt = 'Verification QR Code';
+                    qrTarget.innerHTML = '';
+                    qrTarget.appendChild(img);
+                }
+            }
+
+            const finalizePrint = () => {
+                printWindow.focus();
+                printWindow.print();
+            };
+            if (printWindow.document.fonts && printWindow.document.fonts.ready) {
+                printWindow.document.fonts.ready.then(finalizePrint).catch(finalizePrint);
+            } else {
+                setTimeout(finalizePrint, 400);
+            }
+        }
+
+        async function loadSubmissionScorecard(submissionId) {
+            if (!db) return;
+            try {
+                const doc = await db.collection('submissions').doc(submissionId).get();
+                if (!doc.exists) {
+                    alert('Score card not found.');
+                    return;
+                }
+                currentReportData = { id: doc.id, ...doc.data() };
+                const historicalEligible = (currentReportData.finalStatus || 'FAILED') === 'FAILED' && isReviewUnlockFailureCount(Number(currentReportData.failCount || 0));
+                renderReport(currentReportData, { allowReview: historicalEligible, isHistorical: true, failCount: Number(currentReportData.failCount || 0) });
+                closeHistoryModal();
+            } catch (error) {
+                console.error(error);
+                alert('Unable to open score card.');
+            }
+        }
+
+        function renderReport(reportData, options = {}) {
+            currentReportData = reportData;
+            currentSubmissionId = reportData.id || reportData.submissionId || null;
+            currentOverallAccuracy = Number(reportData.overallAccuracy || 0);
+            currentBackendStatus = reportData.finalStatus || 'FAILED';
+            latestReviewPayload = reportData.reviewPayload || latestReviewPayload || [];
+            currentFailCount = Number(options.failCount ?? reportData.failCount ?? currentFailCount ?? 0);
+
+            const userBox = document.getElementById('report-user-details');
+            userBox.innerHTML = `<div><strong>Name:</strong> ${reportData.name || 'Guest User'}</div><div><strong>Institution:</strong> ${reportData.institution || 'N/A'}</div><div><strong>Email:</strong> ${reportData.email || 'N/A'}</div><div><strong>Country:</strong> ${reportData.country || 'N/A'}</div>`;
+
+            const tbody = document.getElementById('report-body');
+            tbody.innerHTML = '';
+            (reportData.sectionResults || reportData.stageResults || []).forEach(section => {
+                const tr = document.createElement('tr');
+                const accuracy = Number(section.accuracy || 0).toFixed(1);
+                tr.innerHTML = `<td style="font-weight:900;">${section.stage || section.section || 'Section'}</td><td>${accuracy}%</td><td>${section.score || section.correctDisplay || ''}</td>`;
+                tbody.appendChild(tr);
+            });
+
+            const verdict = document.getElementById('final-verdict');
+            verdict.innerText = `OVERALL ACCURACY: ${currentOverallAccuracy.toFixed(1)}%`;
+            let verdictColor = '#2e7d32';
+            if (currentOverallAccuracy < 35) verdictColor = '#c62828';
+            else if (currentOverallAccuracy < 60) verdictColor = '#ef6c00';
+            else if (currentOverallAccuracy < 85) verdictColor = '#1565c0';
+            else verdictColor = '#2e7d32';
+            verdict.style.color = verdictColor;
+            verdict.style.borderColor = verdictColor;
+
+            const backendNote = document.getElementById('backend-note');
+            backendNote.innerText = '';
+            backendNote.style.display = 'none';
+
+            const quote = document.getElementById('quote-area');
+            quote.innerText = currentOverallAccuracy === 100 ? '"Observation is the passive science, experimentation the active science." — Claude Bernard' : '';
+            quote.style.display = quote.innerText ? 'block' : 'none';
+
+            document.getElementById('verification-code').innerText = `Code: ${reportData.id || reportData.submissionId || 'N/A'}`;
+            if (typeof QRCode !== 'undefined') {
+                const verificationUrl = `${window.location.origin}/verify.html?id=${reportData.id || reportData.submissionId || ''}&h=${reportData.hash || ''}`;
+                document.getElementById('qr-code-container').innerHTML = '';
+                new QRCode(document.getElementById('qr-code-container'), {
+                    text: verificationUrl,
+                    width: 150,
+                    height: 150,
+                    colorDark: '#1a0f0a',
+                    colorLight: '#ffffff',
+                    correctLevel: QRCode.CorrectLevel.H
+                });
+            }
+
+            const reviewBtn = document.getElementById('review-session-btn');
+            if (currentBackendStatus === 'PASSED') {
+                if (reviewBtn) reviewBtn.style.display = 'none';
+            } else {
+                updateReviewButtonVisibility(Boolean(options.allowReview));
+            }
+            document.getElementById('report-modal').style.display = 'flex';
+        }
+
+        function checkGlobalSubmissionStatus() {
+            let isComplete = true;
+            
+            STAGES.forEach((stage, idx) => {
+                const totalSlots = stage.rows.length * 6;
+                const filledSlots = globalState[idx] ? Object.keys(globalState[idx]).length : 0;
+                if (filledSlots < totalSlots) isComplete = false;
+            });
+            
+            const btn = document.getElementById('submit-all-btn');
+            if (isComplete) { 
+                btn.classList.add('ready'); 
+                btn.innerText = "SUBMIT GAME"; 
+                btn.disabled = false; 
+            } else { 
+                btn.classList.remove('ready'); 
+                btn.innerText = "FILL ALL CELLS TO SUBMIT"; 
+                btn.disabled = true; 
+            }
+        }
+
+        async function submitSimulation() {
+            const btn = document.getElementById('submit-all-btn');
+            if (!btn.classList.contains('ready')) return;
+            
+            let uData = userProfile || {};
+            if(auth.currentUser && db) { 
+                try { 
+                    const doc = await db.collection('users').doc(auth.currentUser.uid).get(); 
+                    if(doc.exists) { 
+                        uData = doc.data(); 
+                        userProfile = uData; 
+                    } 
+                } catch(e) { 
+                    console.error("Error loading user data:", e); 
+                } 
+            }
+
+            let totalPassed = 0;
+            let totalCorrectAll = 0;
+            let totalCellsAll = 0;
+            let sectionResults = [];
+            latestReviewPayload = buildReviewPayload();
+
+            STAGES.forEach((stage, idx) => {
+                const userAnswers = globalState[idx] || {}; 
+                let sectionCorrect = 0;
+                let totalCells = stage.rows.length * 6;
+                
+                stage.rows.forEach((row) => {
+                    ['source', 'class', 'substrate', 'site', 'product', 'absorb'].forEach(field => {
+                        const zoneId = `zone-${row.name.replace(/\s+/g, '-').replace(/[()]/g, '')}-${field}`;
+                        if (userAnswers[zoneId] === row[field]) sectionCorrect++;
+                    });
+                });
+                
+                const accuracy = totalCells ? (sectionCorrect / totalCells) * 100 : 0;
+                const isPass = sectionCorrect === totalCells; 
+                if (isPass) totalPassed++;
+                totalCorrectAll += sectionCorrect;
+                totalCellsAll += totalCells;
+                
+                sectionResults.push({
+                    stage: stage.title.split(':')[1].trim(),
+                    accuracy,
+                    score: `${sectionCorrect} / ${totalCells}`,
+                    correctDisplay: `${sectionCorrect} / ${totalCells}`,
+                    backendStatus: isPass ? 'PASSED' : 'FAILED'
+                });
+            });
+
+            const overallAccuracy = totalCellsAll ? (totalCorrectAll / totalCellsAll) * 100 : 0;
+            const backendStatus = overallAccuracy === 100 ? 'PASSED' : 'FAILED';
+            const submissionId = generateSubmissionId();
+            const timestamp = new Date();
+            const name = uData.fullName || "Guest User";
+            const inst = uData.institution || "N/A";
+            const email = uData.email || (currentUser ? currentUser.email : "N/A");
+            const country = uData.country || "N/A";
+            const newFailCount = Number(uData.personalFails || 0) + (backendStatus === 'FAILED' ? 1 : 0);
+
+            const verificationData = {
+                id: submissionId,
+                name,
+                email,
+                institution: inst,
+                country,
+                timestamp: timestamp.toISOString(),
+                totalStages: STAGES.length,
+                stagesPassed: totalPassed,
+                totalCorrectAll,
+                totalCellsAll,
+                overallAccuracy,
+                sectionResults,
+                stageResults: sectionResults,
+                reviewPayload: latestReviewPayload,
+                finalStatus: backendStatus,
+                failCount: newFailCount
+            };
+            
+            const verificationHash = await generateHash(verificationData);
+            verificationData.hash = verificationHash;
+            verificationData.userId = currentUser ? currentUser.uid : null;
+            
+            if(currentUser && db) {
+                try {
+                    await db.collection('submissions').doc(submissionId).set(verificationData);
+                    
+                    await db.collection('users').doc(currentUser.uid).set({
+                        lastAttempt: timestamp,
+                        lastSubmissionId: submissionId,
+                        status: verificationData.finalStatus,
+                        attempts: firebase.firestore.FieldValue.increment(1),
+                        personalWins: backendStatus === 'PASSED' ? firebase.firestore.FieldValue.increment(1) : firebase.firestore.FieldValue.increment(0),
+                        personalFails: backendStatus === 'FAILED' ? firebase.firestore.FieldValue.increment(1) : firebase.firestore.FieldValue.increment(0)
+                    }, { merge: true });
+                } catch(e) {
+                    console.error("Error saving submission:", e);
+                }
+            }
+
+            currentReportData = verificationData;
+            renderReport(verificationData, { allowReview: backendStatus === 'FAILED' && isReviewUnlockFailureCount(newFailCount), isHistorical: false, failCount: newFailCount });
+
+            if (backendStatus === 'PASSED') {
+                playFanfare(); 
+                launchConfetti();
+            }
+        }
+
+        function resetGameSession() {
+            document.getElementById('report-modal').style.display = 'none';
+            document.getElementById('tile-review-modal').style.display = 'none';
+            document.getElementById('history-modal').style.display = 'none';
+            
+            localStorage.removeItem('gutdigest_save_' + sessionId);
+            localStorage.removeItem('gutdigest_shuffle_' + sessionId);
+            
+            sessionId = generateSessionId();
+            globalState = {}; 
+            moveHistory = []; 
+            currentStageIdx = 0;
+            shuffleOrder = {};
+            
+            document.querySelectorAll('.nav-tab').forEach(tab => { 
+                tab.classList.remove('filled'); 
+                tab.classList.remove('active'); 
+            });
+            document.getElementById('tab-0').classList.add('active');
+            
+            shuffleRows();
+            loadStage(0); 
+            checkGlobalSubmissionStatus(); 
+            window.scrollTo(0, 0);
+        }
+
+        async function exportToExcel() {
+            // 🔐 ADMIN PASSWORD: "Alagbonsi123"
+            const ADMIN_PASSWORD = "Alagbonsi123";
+            
+            const password = prompt("🔐 Enter Admin Password:");
+            
+            if (password !== ADMIN_PASSWORD) { 
+                alert("❌ Access Denied."); 
+                return; 
+            }
+            
+            alert("📊 Generating spreadsheet... Please wait.");
+            
+            try {
+                const snapshot = await db.collection('users').get();
+                let csvContent = "data:text/csv;charset=utf-8,";
+                csvContent += "Name,Email,Institution,Course,Level,Role,Country,Joined,Attempts,Wins,Fails,LastStatus,LastSubmissionID\n";
+                
+                snapshot.forEach(doc => {
+                    const data = doc.data();
+                    const clean = (text) => (text || "").toString().replace(/,/g, " ").replace(/"/g, "'");
+                    
+                    const joined = data.joined ? (data.joined.toDate ? data.joined.toDate().toISOString() : data.joined) : "N/A";
+                    
+                    let row = [
+                        clean(data.fullName), 
+                        clean(data.email), 
+                        clean(data.institution), 
+                        clean(data.course),
+                        clean(data.level), 
+                        clean(data.role), 
+                        clean(data.country),
+                        joined,
+                        data.attempts || 0, 
+                        data.personalWins || 0, 
+                        data.personalFails || 0, 
+                        clean(data.status || "In Progress"),
+                        clean(data.lastSubmissionId || "N/A")
+                    ];
+                    csvContent += row.join(",") + "\n";
+                });
+                
+                const submissionsSnapshot = await db.collection('submissions').get();
+                csvContent += "\n\n\nSUBMISSIONS DATA\n";
+                csvContent += "SubmissionID,Name,Email,Institution,Timestamp,FinalStatus,StagesPassed,TotalStages,Hash\n";
+                
+                submissionsSnapshot.forEach(doc => {
+                    const data = doc.data();
+                    const clean = (text) => (text || "").toString().replace(/,/g, " ").replace(/"/g, "'");
+                    
+                    let row = [
+                        clean(data.id),
+                        clean(data.name),
+                        clean(data.email),
+                        clean(data.institution),
+                        clean(data.timestamp),
+                        clean(data.finalStatus),
+                        data.stagesPassed || 0,
+                        data.totalStages || 3,
+                        clean(data.hash)
+                    ];
+                    csvContent += row.join(",") + "\n";
+                });
+                
+                const encodedUri = encodeURI(csvContent);
+                const link = document.createElement("a");
+                link.setAttribute("href", encodedUri);
+                const timestamp = new Date().toISOString().slice(0, 10);
+                link.setAttribute("download", `GutDigest_Complete_Data_${timestamp}.csv`);
+                document.body.appendChild(link); 
+                link.click();
+                link.remove();
+                
+                alert("✅ Export complete! Check your downloads.");
+            } catch (error) { 
+                console.error(error); 
+                alert("❌ Error exporting data: " + error.message); 
+            }
+        }
+
+        function launchConfetti() {
+            const canvas = document.getElementById('confetti'); 
+            const ctx = canvas.getContext('2d'); 
+            canvas.width = window.innerWidth; 
+            canvas.height = window.innerHeight;
+            
+            const particles = []; 
+            const colors = ['#d4af37', '#ffffff', '#2e7d32', '#c62828'];
+            
+            for (let i = 0; i < 300; i++) { 
+                particles.push({ 
+                    x: Math.random() * canvas.width, 
+                    y: Math.random() * canvas.height - canvas.height, 
+                    vx: (Math.random() - 0.5) * 6, 
+                    vy: Math.random() * 5 + 3, 
+                    color: colors[Math.floor(Math.random() * colors.length)], 
+                    size: Math.random() * 8 + 4, 
+                    rotation: Math.random() * 360, 
+                    dRot: (Math.random() - 0.5) * 10 
+                }); 
+            }
+            
+            let animationId;
+            let startTime = Date.now();
+            
+            function animate() { 
+                if(Date.now() - startTime > 8000) {
+                    cancelAnimationFrame(animationId);
+                    ctx.clearRect(0, 0, canvas.width, canvas.height);
+                    return;
+                }
+                
+                ctx.clearRect(0, 0, canvas.width, canvas.height); 
+                
+                particles.forEach(p => { 
+                    p.y += p.vy; 
+                    p.x += p.vx; 
+                    p.rotation += p.dRot; 
+                    
+                    ctx.save(); 
+                    ctx.translate(p.x, p.y); 
+                    ctx.rotate(p.rotation * Math.PI / 180); 
+                    ctx.fillStyle = p.color; 
+                    ctx.fillRect(-p.size/2, -p.size/2, p.size, p.size); 
+                    ctx.restore(); 
+                    
+                    if (p.y > canvas.height) p.y = -20; 
+                }); 
+                
+                animationId = requestAnimationFrame(animate); 
+            } 
+            
+            animate();
+        }
+        
+        document.addEventListener('keydown', function(e) {
+            const reviewOpen = document.getElementById('tile-review-modal').style.display === 'flex';
+            if (!reviewOpen) return;
+            if (e.key === 'PrintScreen' || ((e.ctrlKey || e.metaKey) && ['p', 's', 'u'].includes(e.key.toLowerCase()))) {
+                e.preventDefault();
+                alert('Review mode is view-only inside the browser.');
+            }
+        });
+
+        document.addEventListener('contextmenu', function(e) {
+            if (document.getElementById('tile-review-modal').style.display === 'flex') {
+                e.preventDefault();
+            }
+        });
+
+        document.addEventListener('DOMContentLoaded', function() {
+            setDynamicYears();
+            handleTokenColorModeChange();
+            if(auth && auth.currentUser) {
+            } else {
+                document.getElementById('auth-screen').style.display = 'flex';
+                showAuthChoice();
+            }
+        });
+    </script>
+</body>
+</html>
