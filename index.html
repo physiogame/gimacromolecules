@@ -2287,7 +2287,7 @@
                     <button class="auth-btn" style="background:#5d4037; color:#fff;" onclick="downloadResultPdf()">DOWNLOAD SCORECARD</button>
                     <button class="auth-btn" onclick="resetGameSession()">START NEW SESSION</button>
                     <button class="auth-btn" id="review-session-btn" style="display:none; background:#6a1b9a; color:#fff;" onclick="openTileReview()">REVIEW MISTAKES</button>
-                    <button class="auth-btn" id="manuscript-btn" style="display:none; background:#8c6b0d; color:#1a0f0a;" onclick="openManuscriptScreen()">DOWNLOAD MANUSCRIPT</button>
+                    <button class="auth-btn" id="article-btn" style="display:none; background:#8c6b0d; color:#1a0f0a;" onclick="openarticleScreen()">DOWNLOAD article</button>
                 </div>
                 <div class="watermark-text">&copy; <span class="current-year"></span><span class="credit-names">Abdullateef Isiaka Alagbonsi, Toyin Mohammed Salman, Mary Oluwatobi Dada, Elijah Seun Okedun, Aminat Abiola Ajibola, Aolat Adepeju Adepoju, Kazeem Adewale Gbolagade, Fernanda Klein Marcondes</span></div>
             </div>
@@ -2335,13 +2335,13 @@
         </div>
     </div>
 
-    <div id="manuscript-modal" class="report-modal">
+    <div id="article-modal" class="report-modal">
         <div class="wood-screen-box">
             <div class="wood-screen-message">
-                <h2 id="manuscript-modal-title">GutDigest Manuscript</h2>
-                <p id="manuscript-modal-text">Thank you for playing GutDigest. The research paper will be available soon. Please check back later for the full manuscript release.</p>
+                <h2 id="article-modal-title">GutDigest article</h2>
+                <p id="article-modal-text">Thank you for playing GutDigest. The research paper will be available soon. Please check back later for the full article release.</p>
                 <div style="display:flex; justify-content:center; margin-top:22px;">
-                    <button class="auth-btn" style="max-width:220px;" onclick="closeManuscriptScreen()">CLOSE</button>
+                    <button class="auth-btn" style="max-width:220px;" onclick="closearticleScreen()">CLOSE</button>
                 </div>
             </div>
         </div>
@@ -3318,7 +3318,7 @@ function toggleAuthMode() {
         let currentBackendStatus = 'FAILED';
         let currentFailCount = 0;
         let currentCanReview = false;
-        let currentCanOpenManuscript = false;
+        let currentCanOpenarticle = false;
         let sessionMeta = createDefaultSessionMeta();
         let pendingSectionAdvanceTarget = null;
         let boardDelegationReady = false;
@@ -4323,9 +4323,9 @@ function toggleAuthMode() {
             if ((status || 'FAILED') === 'PASSED') {
                 return {
                     showReview: false,
-                    showManuscript: true,
+                    showarticle: true,
                     exclusiveChoice: false,
-                    manuscriptLabel: 'UNLOCK PRIZE',
+                    articleLabel: 'UNLOCK PRIZE',
                     guidance: 'Perfect accuracy achieved. Your prize path is ready.',
                     ribbon: true
                 };
@@ -4334,9 +4334,9 @@ function toggleAuthMode() {
             if (fails <= 1) {
                 return {
                     showReview: false,
-                    showManuscript: false,
+                    showarticle: false,
                     exclusiveChoice: false,
-                    manuscriptLabel: 'DOWNLOAD MANUSCRIPT',
+                    articleLabel: 'DOWNLOAD article',
                     guidance: 'Good effort. Start a new session when you are ready to improve your score.',
                     ribbon: false
                 };
@@ -4344,9 +4344,9 @@ function toggleAuthMode() {
             if (fails === 2) {
                 return {
                     showReview: true,
-                    showManuscript: false,
+                    showarticle: false,
                     exclusiveChoice: false,
-                    manuscriptLabel: 'DOWNLOAD MANUSCRIPT',
+                    articleLabel: 'DOWNLOAD article',
                     guidance: 'Good effort. Your review of mistakes is now available for this scorecard.',
                     ribbon: false
                 };
@@ -4354,26 +4354,26 @@ function toggleAuthMode() {
             if (fails === 3) {
                 return {
                     showReview: true,
-                    showManuscript: true,
+                    showarticle: true,
                     exclusiveChoice: true,
-                    manuscriptLabel: 'DOWNLOAD MANUSCRIPT',
-                    guidance: 'Well played. Choose one path for this scorecard: review mistakes or open the manuscript preview.',
+                    articleLabel: 'DOWNLOAD article',
+                    guidance: 'Well played. Choose one path for this scorecard: review mistakes or open the article preview.',
                     ribbon: false
                 };
             }
             return {
                 showReview: true,
-                showManuscript: true,
+                showarticle: true,
                 exclusiveChoice: false,
-                manuscriptLabel: 'DOWNLOAD MANUSCRIPT',
-                guidance: 'Well played. Review mistakes and manuscript preview are both available for this scorecard.',
+                articleLabel: 'DOWNLOAD article',
+                guidance: 'Well played. Review mistakes and article preview are both available for this scorecard.',
                 ribbon: false
             };
         }
 
         function updateRewardButtons() {
             const reviewBtn = document.getElementById('review-session-btn');
-            const manuscriptBtn = document.getElementById('manuscript-btn');
+            const articleBtn = document.getElementById('article-btn');
             const note = document.getElementById('review-lock-note');
             const guidance = document.getElementById('reward-guidance');
             const ribbon = document.getElementById('prize-ribbon');
@@ -4384,7 +4384,7 @@ function toggleAuthMode() {
             if (guidance) guidance.innerText = rewardState.guidance;
 
             currentCanReview = rewardState.showReview;
-            currentCanOpenManuscript = rewardState.showManuscript;
+            currentCanOpenarticle = rewardState.showarticle;
 
             if (reviewBtn) {
                 reviewBtn.style.display = rewardState.showReview ? 'inline-block' : 'none';
@@ -4395,29 +4395,29 @@ function toggleAuthMode() {
                 reviewBtn.classList.remove('reward-btn-highlight');
                 reviewBtn.textContent = 'REVIEW MISTAKES';
             }
-            if (manuscriptBtn) {
-                manuscriptBtn.style.display = rewardState.showManuscript ? 'inline-block' : 'none';
-                manuscriptBtn.disabled = false;
-                manuscriptBtn.style.opacity = rewardState.showManuscript ? '1' : '0.5';
-                manuscriptBtn.classList.remove('reward-btn-highlight');
-                manuscriptBtn.textContent = rewardState.manuscriptLabel;
+            if (articleBtn) {
+                articleBtn.style.display = rewardState.showarticle ? 'inline-block' : 'none';
+                articleBtn.disabled = false;
+                articleBtn.style.opacity = rewardState.showarticle ? '1' : '0.5';
+                articleBtn.classList.remove('reward-btn-highlight');
+                articleBtn.textContent = rewardState.articleLabel;
             }
 
             if (rewardState.exclusiveChoice) {
                 if (reviewBtn) reviewBtn.classList.add('reward-btn-highlight');
-                if (manuscriptBtn) manuscriptBtn.classList.add('reward-btn-highlight');
+                if (articleBtn) articleBtn.classList.add('reward-btn-highlight');
                 if (!chosen) {
-                    if (guidance) guidance.innerText = 'Excellent effort. Choose one path for this scorecard: review mistakes or the manuscript preview.';
+                    if (guidance) guidance.innerText = 'Excellent effort. Choose one path for this scorecard: review mistakes or the article preview.';
                 } else if (chosen === 'review') {
-                    currentCanOpenManuscript = false;
-                    if (manuscriptBtn) {
-                        manuscriptBtn.disabled = true;
-                        manuscriptBtn.style.opacity = '0.45';
-                        manuscriptBtn.textContent = 'MANUSCRIPT OPTION LOCKED';
-                        manuscriptBtn.classList.remove('reward-btn-highlight');
+                    currentCanOpenarticle = false;
+                    if (articleBtn) {
+                        articleBtn.disabled = true;
+                        articleBtn.style.opacity = '0.45';
+                        articleBtn.textContent = 'article OPTION LOCKED';
+                        articleBtn.classList.remove('reward-btn-highlight');
                     }
-                    if (guidance) guidance.innerText = 'You chose review mode for this scorecard. The manuscript path is now locked here.';
-                } else if (chosen === 'manuscript') {
+                    if (guidance) guidance.innerText = 'You chose review mode for this scorecard. The article path is now locked here.';
+                } else if (chosen === 'article') {
                     currentCanReview = false;
                     if (reviewBtn) {
                         reviewBtn.disabled = true;
@@ -4425,7 +4425,7 @@ function toggleAuthMode() {
                         reviewBtn.textContent = 'REVIEW OPTION LOCKED';
                         reviewBtn.classList.remove('reward-btn-highlight');
                     }
-                    if (guidance) guidance.innerText = 'You chose the manuscript path for this scorecard. The review path is now locked here.';
+                    if (guidance) guidance.innerText = 'You chose the article path for this scorecard. The review path is now locked here.';
                 }
             }
 
@@ -4437,9 +4437,9 @@ function toggleAuthMode() {
                 } else if (Number(currentFailCount || 0) === 2) {
                     note.innerText = 'Review mistakes is now available for this scorecard.';
                 } else if (Number(currentFailCount || 0) === 3) {
-                    note.innerText = 'Choose either review mistakes or the manuscript preview for this scorecard.';
+                    note.innerText = 'Choose either review mistakes or the article preview for this scorecard.';
                 } else {
-                    note.innerText = 'Both review mistakes and manuscript preview remain available for this and later scorecards.';
+                    note.innerText = 'Both review mistakes and article preview remain available for this and later scorecards.';
                 }
             }
         }
@@ -4460,30 +4460,30 @@ function toggleAuthMode() {
             updateRewardButtons();
         }
 
-        function openManuscriptScreen() {
-            if (!currentSubmissionId || !currentCanOpenManuscript) {
-                showToast('That manuscript option is not available for this scorecard.', 'warn');
+        function openarticleScreen() {
+            if (!currentSubmissionId || !currentCanOpenarticle) {
+                showToast('That article option is not available for this scorecard.', 'warn');
                 return;
             }
             const rewardState = getRewardState(currentBackendStatus, currentFailCount);
             if (rewardState.exclusiveChoice && !getRewardChoice(currentSubmissionId)) {
-                setRewardChoice(currentSubmissionId, 'manuscript');
+                setRewardChoice(currentSubmissionId, 'article');
             }
-            const title = document.getElementById('manuscript-modal-title');
-            const body = document.getElementById('manuscript-modal-text');
+            const title = document.getElementById('article-modal-title');
+            const body = document.getElementById('article-modal-text');
             if ((currentBackendStatus || 'FAILED') === 'PASSED') {
                 if (title) title.textContent = 'GutDigest Prize Unlocked';
-                if (body) body.textContent = 'Congratulations on your perfect performance in GutDigest. Your prize manuscript page has been unlocked. The full research paper will be available here soon.';
+                if (body) body.textContent = 'Congratulations on your perfect performance in GutDigest. Your prize article page has been unlocked. The full research paper will be available here soon.';
             } else {
-                if (title) title.textContent = 'GutDigest Manuscript';
-                if (body) body.textContent = 'Thank you for playing GutDigest. The research paper will be available soon. Please check back later for the full manuscript release.';
+                if (title) title.textContent = 'GutDigest article';
+                if (body) body.textContent = 'Thank you for playing GutDigest. The research paper will be available soon. Please check back later for the full article release.';
             }
-            document.getElementById('manuscript-modal').style.display = 'flex';
+            document.getElementById('article-modal').style.display = 'flex';
             updateRewardButtons();
         }
 
-        function closeManuscriptScreen() {
-            document.getElementById('manuscript-modal').style.display = 'none';
+        function closearticleScreen() {
+            document.getElementById('article-modal').style.display = 'none';
         }
 
         async function openHistoryModal() {
@@ -5071,7 +5071,7 @@ function toggleAuthMode() {
             document.getElementById('tile-review-modal').style.display = 'none';
             document.getElementById('history-modal').style.display = 'none';
             document.getElementById('section-result-modal').style.display = 'none';
-            document.getElementById('manuscript-modal').style.display = 'none';
+            document.getElementById('article-modal').style.display = 'none';
 
             flushPendingStateSave();
             clearStoredSession(sessionId);
@@ -5090,7 +5090,7 @@ function toggleAuthMode() {
             latestReviewPayload = [];
             currentSubmissionId = null;
             currentCanReview = false;
-            currentCanOpenManuscript = false;
+            currentCanOpenarticle = false;
             pendingSectionAdvanceTarget = null;
 
             document.querySelectorAll('.nav-tab').forEach(tab => {
